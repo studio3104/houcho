@@ -272,6 +272,7 @@ EOH
 
 
   def create_role(role)
+    abort("#{role} is reserved by houcho") if %w{ManuallyRun}.include?(role)
     r     = rolehandle
     index = r.index(role)
     abort("role(#{role}) already exist") if index
@@ -417,6 +418,11 @@ EOH
     rh = cfload
     r  = rolehandle
 
+    hosts.each do |host|
+      role_host_specs['ManuallyRun'][host] ||= []
+      role_host_specs['ManuallyRun'][host] = (role_host_specs['ManuallyRun'][host] + specs).uniqspecs
+    end
+
     roles.each do |role|
       validate_role(Regexp.new(role)).each do |index|
         _role  = r.name(index)
@@ -436,12 +442,7 @@ EOH
 
         _hosts.each do |host|
           role_host_specs[_role][host] ||= []
-          role_host_specs[_role][host] = (role_host_specs[_role][host] + specs + _specs).uniq
-        end
-
-        hosts.each do |host|
-          role_host_specs[_role][host] ||= []
-          role_host_specs[_role][host] = (role_host_specs[_role][host] + specs + _specs).uniqspecs
+          role_host_specs[_role][host] = (role_host_specs[_role][host] + _specs).uniq
         end
       end
     end

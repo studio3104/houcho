@@ -63,9 +63,9 @@ class Spec < Thor::MyHelper
   end
 
   desc 'exec [options]', 'run serverspec'
-  option :hosts,   :type => :array,   :desc => 'set hosts'
-  option :specs,   :type => :array,   :desc => 'set specs'
-  option :roles,   :type => :array,   :desc => 'set roles'
+  option :hosts,   :type => :array,   :desc => 'hosts that run specs (required: --specs)'
+  option :specs,   :type => :array,   :desc => 'run specs (requied: --hosts)'
+  option :roles,   :type => :array,   :desc => 'runspecs by role'
   option :ukigumo, :type => :boolean, :desc => 'post results to UkigumoServer'
   option :ikachan, :type => :boolean, :desc => 'post fail results to Ikachan'
   option :dry_run, :type => :boolean, :desc => 'show commands that may exexute'
@@ -73,7 +73,10 @@ class Spec < Thor::MyHelper
     hosts, specs, roles =
       (options[:hosts]||[]), (options[:specs]||[]), (options[:roles]||[])
 
-    self.class.task_help(shell, __method__) if (hosts + specs + roles).empty?
+    if (hosts + specs + roles).empty? || (hosts.empty? && ! specs.empty?) || (! hosts.empty? && specs.empty?)
+      self.class.task_help(shell, __method__)
+      exit
+    end
 
     conduct.runspec_prepare(
       roles, hosts, specs,
