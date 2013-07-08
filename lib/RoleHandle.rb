@@ -95,6 +95,10 @@ class RoleHandle
       @roles.data.invert[role]
     end
 
+    def indexes_regexp(role)
+      @roles.data.select {|index, rolename| rolename =~ role }.keys
+    end
+
     def name(id)
       @roles.data[id]
     end

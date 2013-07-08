@@ -52,19 +52,31 @@ class Spec < Thor::MyHelper
     conduct.detach_spec_from_role(spec, role)
   end
 
-  desc 'exec [ROLENAME] [options]', 'run serverspec'
+  desc 'check [options]', '指定specを、関連付けられているhostを適当に選んで実行させる'
+  option :sample_host_count, :type => :numeric, :default => 5, :desc => 'サンプルホスト数'
+  def check(*args)
+    if args.empty?
+      self.class.task_help(shell, __method__)
+      exit
+    end
+    conduct.check_specs(options[:sample_host_count], args)
+  end
+
+  desc 'exec [options]', 'run serverspec'
+  option :hosts,   :type => :array,   :desc => 'set hosts'
+  option :specs,   :type => :array,   :desc => 'set specs'
+  option :roles,   :type => :array,   :desc => 'set roles'
   option :ukigumo, :type => :boolean, :desc => 'post results to UkigumoServer'
   option :ikachan, :type => :boolean, :desc => 'post fail results to Ikachan'
   option :dry_run, :type => :boolean, :desc => 'show commands that may exexute'
-  def exec(role = nil)
-    # thor の help よくわかってない。あとでなおす。
-    if role.nil?
-      puts `houcho spec help exec`
-      exit
-    end
+  def exec
+    hosts, specs, roles =
+      (options[:hosts]||[]), (options[:specs]||[]), (options[:roles]||[])
 
-    conduct.runspec_by_role(
-      role,
+    self.class.task_help(shell, __method__) if (hosts + specs + roles).empty?
+
+    conduct.runspec_prepare(
+      roles, hosts, specs,
       {
         ukigumo: options[:ukigumo],
         ikachan: options[:ikachan],
@@ -213,10 +225,9 @@ end
 
 class Houcho < Thor
   register(CloudForecast, 'cfrole', 'cfrole [attach|detach|show|details|configure]', 'cloudforecastをのyamlから情報を読み込んで操作します')
-  register(Runlist, 'runlist', 'runlist [create|delete|rename|include|exclude|details|show]', 'runlistを追加したり情報を表示したり')
   register(Role, 'role', 'role [create|delete|rename|details|show]', 'roleを追加したり情報を表示したり')
   register(Host, 'host', 'host [attach|detach|show|details|ignore|disignore]', 'hostを追加したり情報を表示したり')
-  register(Spec, 'spec', 'spec [attach|detach|show|details|exec]', 'specを追加したり情報を表示したり')
+  register(Spec, 'spec', 'spec [attach|detach|show|details|exec|check]', 'specを追加したり情報を表示したり')
 
   class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message.'
   no_tasks do

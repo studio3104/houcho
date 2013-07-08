@@ -88,6 +88,9 @@ EOH
       'git'     => {'uri'  => nil,},
     }.to_yaml) if ! File.exists? './conf/houcho.conf'
 
+    File.write('./conf/rspec.conf', '--format documentation') if ! File.exists? './conf/rspec.conf'
+    File.symlink('./conf/rspec.conf', './.rspec') if ! File.exists? './.rspec'
+
     %w{
       runlists.yaml
       roles.yaml
@@ -363,38 +366,94 @@ EOH
   end
 
 
+  def check_specs(*args)
+    host_count = args.shift
+    specs      = args.flatten
+    s          = spechandle
+    h          = hosthandle
+    cr         = cfrolehandle
+    rh         = cfload
+
+    specs.each do |spec|
+      hosts   = []
+      indexes = s.indexes(spec)
+
+      if indexes.empty?
+        puts "#{spec} has not attached to any roles"
+        next
+      end
+
+      indexes.each do |index|
+        hosts += h.elements(index)
+        cr.elements(index).each do |cfrole|
+          hosts += rh[cfrole]
+        end
+      end
+      hosts.sample(host_count).each {|host| runspec(host, [spec])}
+    end
+  end
+
+
   def runspec_all(ci, dry)
     roles = RoleHandle::YamlLoader.new('./role/roles.yaml').data.values.sort
   end
 
 
-  def runspec_by_role(role, ci, dry)
-    index  = validate_role(role)
-    rh     = cfload
-    hosts  = hosthandle.elements(index)
-    specs  = spechandle.elements(index)
+  def runspec_prepare(roles, hosts, specs, ci, dry)
+    host_specs = prepare_list(roles, hosts, specs)
 
-    cfrolehandle.elements(index).each do |cf_role|
-      if rh[cf_role].nil?
-        p cf_role
-        next
-      end
-      hosts += rh[cf_role]
-    end
-
-    hosts = hosts.uniq - ignorehosthandle.data.to_a
-
-    processor_count = dry ? 1 : Parallel.processor_count
-    Parallel.each(hosts, in_threads: processor_count) do |host|
-      runspec(role, host, specs, ci, dry)
+    host_specs.each do |host, specs|
+      runspec(host, specs, ci, dry)
     end
   end
 
+
   private
+  def prepare_list(roles, hosts, specs)
+    host_specs = {}
+
+    rh = cfload
+    r  = rolehandle
+
+    hosts.each do |host|
+      host_specs[host] = specs
+    end
+
+    roles.each do |role|
+      validate_role(Regexp.new(role)).each do |index|
+        _hosts = hosthandle.elements(index)
+        _specs = spechandle.elements(index)
+
+        cfrolehandle.elements(index).each do |cf_role|
+          if rh[cf_role].nil?
+            p cf_role
+            next
+          end
+          _hosts += rh[cf_role]
+        end
+
+        _hosts = (hosts + _hosts).uniq - ignorehosthandle.data.to_a
+
+        _hosts.each do |host|
+          host_specs[host] ||= []
+          host_specs[host] = (host_specs[host] + specs + _specs).uniq
+        end
+      end
+    end
+
+    host_specs
+  end
+
   def validate_role(role)
-    index = rolehandle.index(role)
-    abort("role(#{role}) does not exist") if ! index
-    index
+    if Regexp === role
+      indexes = rolehandle.indexes_regexp(role)
+      abort if indexes.empty?
+      indexes
+    else
+      index = rolehandle.index(role)
+      abort("role(#{role}) does not exist") if ! index
+      index
+    end
   end
 
   def cfload
@@ -425,16 +484,16 @@ EOH
     RoleHandle::ElementHandler.new('./role/specs.yaml')
   end
 
-  def runspec(role, host, specs, ci, dryrun = nil)
+  def runspec(host, specs, ci = {}, dryrun = nil)
     executable_specs = specs.map {|spec| 'spec/' + spec + '_spec.rb'}.join(' ')
-    command          = "rspec #{executable_specs}"
+    command          = "parallel_rspec #{executable_specs}"
     if dryrun
       puts 'TARGET_HOST=' + host + ' ' + command
       return
     end
 
     ENV['TARGET_HOST'] = host
-    result = systemu command + ' --format documentation'
+    result = systemu command
     result_status = result[0] == 0 ? 1 : 2
     puts result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp + "\t#{host}, #{executable_specs}\n"
 
@@ -442,8 +501,8 @@ EOH
       @conf = YAML.load_file('conf/houcho.conf')
       ukigumo_report = CI::UkigumoClient.new(@conf['ukigumo']['host'], @conf['ukigumo']['port']).post({
         :status   => result_status,
-        :project  => role.gsub(/\./, '-'),
-        :branch   => host.gsub(/\./, '-'),
+        :project  => host.gsub(/\./, '-'),
+        :branch   => spec.gsub(/\./, '-'),
         :repo     => @conf['git']['uri'],
         :revision => `git log spec/| grep '^commit' | head -1 | awk '{print $2}'`.chomp,
         :vc_log   => '',
