@@ -389,7 +389,7 @@ EOH
           hosts += rh[cfrole]
         end
       end
-      hosts.sample(host_count).each {|host| runspec(host, [spec])}
+      hosts.sample(host_count).each {|host| runspec(nil, host, [spec])}
     end
   end
 
@@ -400,27 +400,26 @@ EOH
 
 
   def runspec_prepare(roles, hosts, specs, ci, dry)
-    host_specs = prepare_list(roles, hosts, specs)
+    rhs = prepare_list(roles, hosts, specs)
 
-    host_specs.each do |host, specs|
-      runspec(host, specs, ci, dry)
+    rhs.each do |role, host_specs|
+      host_specs.each do |host, specs|
+        runspec(role, host, specs, ci, dry)
+      end
     end
   end
 
 
   private
   def prepare_list(roles, hosts, specs)
-    host_specs = {}
+    role_host_specs = {}
 
     rh = cfload
     r  = rolehandle
 
-    hosts.each do |host|
-      host_specs[host] = specs
-    end
-
     roles.each do |role|
       validate_role(Regexp.new(role)).each do |index|
+        _role  = r.name(index)
         _hosts = hosthandle.elements(index)
         _specs = spechandle.elements(index)
 
@@ -433,15 +432,21 @@ EOH
         end
 
         _hosts = (hosts + _hosts).uniq - ignorehosthandle.data.to_a
+        role_host_specs[_role] = {}
 
         _hosts.each do |host|
-          host_specs[host] ||= []
-          host_specs[host] = (host_specs[host] + specs + _specs).uniq
+          role_host_specs[_role][host] ||= []
+          role_host_specs[_role][host] = (role_host_specs[_role][host] + specs + _specs).uniq
+        end
+
+        hosts.each do |host|
+          role_host_specs[_role][host] ||= []
+          role_host_specs[_role][host] = (role_host_specs[_role][host] + specs + _specs).uniqspecs
         end
       end
     end
 
-    host_specs
+    role_host_specs
   end
 
   def validate_role(role)
@@ -484,7 +489,7 @@ EOH
     RoleHandle::ElementHandler.new('./role/specs.yaml')
   end
 
-  def runspec(host, specs, ci = {}, dryrun = nil)
+  def runspec(role, host, specs, ci = {}, dryrun = nil)
     executable_specs = specs.map {|spec| 'spec/' + spec + '_spec.rb'}.join(' ')
     command          = "parallel_rspec #{executable_specs}"
     if dryrun
@@ -501,8 +506,8 @@ EOH
       @conf = YAML.load_file('conf/houcho.conf')
       ukigumo_report = CI::UkigumoClient.new(@conf['ukigumo']['host'], @conf['ukigumo']['port']).post({
         :status   => result_status,
-        :project  => host.gsub(/\./, '-'),
-        :branch   => command, #spec.gsub(/\./, '-'),
+        :project  => role,
+        :branch   => host.gsub(/\./, '-'),
         :repo     => @conf['git']['uri'],
         :revision => `git log spec/| grep '^commit' | head -1 | awk '{print $2}'`.chomp,
         :vc_log   => command,
