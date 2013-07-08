@@ -502,10 +502,10 @@ EOH
       ukigumo_report = CI::UkigumoClient.new(@conf['ukigumo']['host'], @conf['ukigumo']['port']).post({
         :status   => result_status,
         :project  => host.gsub(/\./, '-'),
-        :branch   => spec.gsub(/\./, '-'),
+        :branch   => command, #spec.gsub(/\./, '-'),
         :repo     => @conf['git']['uri'],
         :revision => `git log spec/| grep '^commit' | head -1 | awk '{print $2}'`.chomp,
-        :vc_log   => '',
+        :vc_log   => command,
         :body     => result[1],
       })
     end
