@@ -34,10 +34,10 @@ class Conductor
     end
 
     File.write('./role/cloudforecast/houcho_sample.yaml', <<EOH
---- houcho
+--- #houcho
 servers:
   - label: author
-  - config: studio3104
+    config: studio3104
     hosts:
       - studio3104.test
       - studio3105.test
@@ -81,6 +81,23 @@ RSpec.configure do |c|
 end
 EOH
     ) if ! File.exists? './spec/spec_helper.rb'
+
+    File.write('./spec/houcho_sample_spec.rb', <<EOH
+require 'spec_helper'
+
+describe user('studio3104') do
+  it { should exist }
+  it { should have_uid 3104 }
+  it { should have_home_directory '/home/studio3104' }
+  it { should have_login_shell '/bin/zsh' }
+  it { should belong_to_group 'studio3104' }
+end
+describe group('studio3104') do
+  it { should exist }
+  it { should have_gid 3104 }
+end
+EOH
+   ) if ! File.exists? './spec/houcho_sample_spec.rb'
 
     File.write('./conf/houcho.conf', {
       'ukigumo' => {'host' => nil, 'port' => nil,},

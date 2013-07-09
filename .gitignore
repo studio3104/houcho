@@ -1,1 +1,8 @@
 *.swp
+pkg
+coverage
+coverage.data
+rdoc
+.yardoc
+.bundle
+
