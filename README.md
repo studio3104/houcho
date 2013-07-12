@@ -2,16 +2,15 @@
 - wrapping to execute serverspec
 
 ## Install and Initialize
-- git cloneして、bin/にPATHを通します。
+- install houcho from ruby gems
 
   ```sh
-$ git clone git://github.com/studio3104/houcho.git
-$ echo PATH=`pwd`'/houcho/bin:$PATH' >> ~/.bachrc
+  $ gem install houcho
   ```
 
-- 作業ディレクトリを作成し、イニシャライズします。
+- make working directory and initialize.
   - このディレクトリ配下にrole情報やspecなどが蓄積されます。
-  - `houcho init`すると`git init`されます。
+  - `houcho init` `git init`されます。
   
   ```sh
 $ mkdir houcho-repo
@@ -20,44 +19,40 @@ $ houcho init
   ```
 
 ## Simple Usage
-- もっともシンプルな使い方の例。
+- example of the most simplest use case
 
   ```sh
-$ houcho spec exec --specs houcho_sample --hosts test.studio3104.com 
+  $ houcho spec exec --specs houcho_sample --hosts test.studio3104.com 
   ```
 
-  - `test.studio3104.com`に`houcho_sample_spec.rb`を実行します。
-  - `--specs`,`--hosts`の引数は、スペース区切りで複数指定が可能です。
-  - `--specs`の引数は、作業ディレクトリの`spec/`からの相対パスで、`_spec.rb`を除いて指定します。
-  
+  - run `houcho_sample_spec.rb` ro `test.studio3104.com`
+  - arguments of `--specs` and `--hosts` are able to specify multiple space-delimited.
+  - argument of `--specs` is able to specify exception of `_spec.rb`, and relative path from `spec/` under working directory.
+
 ## Create Role, Run Role
 よく使う組み合わせをroleとして定義しておくことが出来ます。
 
-- まずはroleの作成。
+- create role at first.
 
-  - role名はフリーワードでokです。
+  ```sh
+  $ houcho role create studio3104::www
+  ```
 
-    ```sh
-$ houcho role create studio3104::www
-    ```
-  
-  - 作成したroleにホストをattachします。
-    - TODO: 複数指定出来るようにする。
-  
-    ```sh
-$ houcho host attach www01.studio3104.com studio3104::www
-$ houcho host attach www02.studio3104.com studio3104::www
-    ```
+- attach a host to role just created.
+
+  ```sh
+  $ houcho host attach www01.studio3104.com studio3104::www
+  $ houcho host attach www02.studio3104.com studio3104::www
+  ```
     
-  - specをattachします。
-    - TODO: 複数指定出来るようにする。
-  - simple usageと同じように、作業ディレクトリの`spec/`からの相対パスで、`_spec.rb`を除いて指定します。
+- attach a spec to role.
+- argument is able to specify exception of `_spec.rb`, and relative path from `spec/` under working directory same as simple usage.
     
-    ```sh
-$ houcho spec attach houcho_sample studio3104::www
-    ```
+  ```sh
+  $ houcho spec attach houcho_sample studio3104::www
+  ```
 
-- 作成したroleの内容を確認します。
+- show details of a role just created.
 
   ```sh
 $ houcho role details studio3104::www
@@ -71,25 +66,25 @@ studio3104::www
    └─ houcho_sample
   ```
 
-- roleを実行します。
-  - 複数指定が可能です。
+- execute role.
+- it can specify multiple space-delimited.
   
   ```sh
-$ houcho spec exec --roles studio3104::www
+  $ houcho spec exec --roles studio3104::www
   ```
   
-  - 正規表現を使うことも出来ます。
+- it is also possible to use regular expressions.
   
   ```sh
-$ houcho spec exec --roles studio3104.+
+  $ houcho spec exec --roles studio3104.+
   ```
-  
+
 
 ## Include CloudForecast's yaml file
-cloudoforecastのyamlを読み込み、定義済みのオリジナルroleにattach出来ます。
+houcho can load yaml of CloudForecast, and attach to the role defined.
 
-- cloudforecastのyamlを、`role/cloudforecast/`に設置します。
-  - 拡張子を`yaml`にしておく必要があります。
+- install yaml of CloudForecast to `role/cloudforecast/` under working directory.
+- 拡張子を`yaml`にしておく必要があります。
   
 - cloudforecastのyamlを読み込みます。(例では`role/cloudforecast/houcho_sample.yaml`を読み込んでいます。)
   - yamlを置き換えるたびに実行してください。毎回実行する必要はありません。

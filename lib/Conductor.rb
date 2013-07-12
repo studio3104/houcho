@@ -430,14 +430,14 @@ EOH
 
   private
   def prepare_list(roles, hosts, specs)
-    role_host_specs = {}
+    role_host_specs = { 'ManuallyRun' => {} }
 
     rh = cfload
     r  = rolehandle
 
     hosts.each do |host|
       role_host_specs['ManuallyRun'][host] ||= []
-      role_host_specs['ManuallyRun'][host] = (role_host_specs['ManuallyRun'][host] + specs).uniqspecs
+      role_host_specs['ManuallyRun'][host] = (role_host_specs['ManuallyRun'][host] + specs).uniq
     end
 
     roles.each do |role|
@@ -508,8 +508,17 @@ EOH
   end
 
   def runspec(role, host, specs, ci = {}, dryrun = nil)
-    executable_specs = specs.map {|spec| 'spec/' + spec + '_spec.rb'}.join(' ')
-    command          = "parallel_rspec #{executable_specs}"
+    executable_specs = []
+    specs.each do |spec|
+      if spec =~ /_spec.rb$/
+        executable_specs << spec
+      else
+        executable_specs << 'spec/' + spec + '_spec.rb'
+      end
+    end
+
+    command = "parallel_rspec #{executable_specs.sort.uniq.join(' ')}"
+
     if dryrun
       puts 'TARGET_HOST=' + host + ' ' + command
       return
