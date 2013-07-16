@@ -1,7 +1,7 @@
 require 'net/http'
 require 'uri'
 
-class CI
+module Houcho::CI
   class UkigumoClient
     def initialize(server, port = 80, url = "http://#{server}:#{port}")
       @ukigumo_server      = server

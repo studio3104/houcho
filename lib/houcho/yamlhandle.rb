@@ -1,12 +1,10 @@
 # -*- encoding: utf-8 -*-
-class RoleHandle
-  require 'yaml'
-  require 'tempfile'
-  require 'find'
-end
+require 'yaml'
+require 'tempfile'
+require 'find'
 
-class RoleHandle
-  class YamlLoader
+class YamlHandle
+  class Loader
     attr_reader :data
 
     def initialize(yaml_file)
@@ -15,7 +13,7 @@ class RoleHandle
     end
   end
 
-  class YamlEditor < YamlLoader
+  class Editor < Loader
     attr_accessor :data
 
     def initialize(yaml_file)
@@ -68,39 +66,6 @@ class RoleHandle
     def indexes(element)
       return [] if ! @elements.data.values.flatten.include?(element)
       @elements.data.select {|index, elems|elems.include?(element)}.keys
-    end
-  end
-
-  class RoleHandler
-    def initialize(yaml)
-      @roles = YamlEditor.new(yaml)
-    end
-
-    def create(role)
-      @roles.data[(@roles.data.keys.max||0) + 1] = role
-      @roles.save_to_file
-    end
-
-    def delete(id)
-      @roles.data.delete(id)
-      @roles.save_to_file
-    end
-
-    def rename(id, name)
-      @roles.data[id] = name
-      @roles.save_to_file
-    end
-
-    def index(role)
-      @roles.data.invert[role]
-    end
-
-    def indexes_regexp(role)
-      @roles.data.select {|index, rolename| rolename =~ role }.keys
-    end
-
-    def name(id)
-      @roles.data[id]
     end
   end
 

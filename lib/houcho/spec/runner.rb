@@ -1,0 +1,3 @@
+module Houcho::SpecRunner
+
+end

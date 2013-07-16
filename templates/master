@@ -1,0 +1,94 @@
+module Houcho
+  module Initialize
+    %W{conf role/cloudforecast spec}.each do |d|
+      FileUtils.mkdir_p d if ! Dir.exists? d
+    end
+
+    File.write('./role/cloudforecast/houcho_sample.yaml', <<EOH
+--- #houcho
+servers:
+  - label: author
+    config: studio3104
+    hosts:
+      - studio3104.test
+      - studio3105.test
+      - studio3106.test
+      - studio3107.test
+      - studio3108.test
+      - studio3109.test
+      - studio3110.test
+EOH
+    ) if ! File.exists? './role/cloudforecast/houcho_sample.yaml'
+
+    File.write('./spec/spec_helper.rb', <<EOH
+require 'serverspec'
+require 'pathname'
+require 'net/ssh'
+
+include Serverspec::Helper::Ssh
+include Serverspec::Helper::DetectOS
+
+RSpec.configure do |c|
+  if ENV['ASK_SUDO_PASSWORD']
+    require 'highline/import'
+    c.sudo_password = ask("Enter sudo password: ") { |q| q.echo = false }
+  else
+    c.sudo_password = ENV['SUDO_PASSWORD']
+  end
+  c.before :all do
+    block = self.class.metadata[:example_group_block]
+    if RUBY_VERSION.start_with?('1.8')
+      file = block.to_s.match(/.*@(.*):[0-9]+>/)[1]
+    else
+      file = block.source_location.first
+    end
+    c.ssh.close if c.ssh
+    c.host  = ENV['TARGET_HOST']
+    options = Net::SSH::Config.for(c.host)
+    user    = options[:user] || Etc.getlogin
+    c.ssh   = Net::SSH.start(c.host, user, options)
+    c.os    = backend(Serverspec::Commands::Base).check_os
+  end
+end
+EOH
+    ) if ! File.exists? './spec/spec_helper.rb'
+
+    File.write('./spec/houcho_sample_spec.rb', <<EOH
+require 'spec_helper'
+
+describe user('studio3104') do
+  it { should exist }
+  it { should have_uid 3104 }
+  it { should have_home_directory '/home/studio3104' }
+  it { should have_login_shell '/bin/zsh' }
+  it { should belong_to_group 'studio3104' }
+end
+describe group('studio3104') do
+  it { should exist }
+  it { should have_gid 3104 }
+end
+EOH
+   ) if ! File.exists? './spec/houcho_sample_spec.rb'
+
+    File.write('./conf/houcho.conf', {
+      'ukigumo' => {'host' => nil, 'port' => nil,},
+      'ikachan' => {'host' => nil, 'port' => nil, 'channel' => [nil],},
+      'git'     => {'uri'  => nil,},
+    }.to_yaml) if ! File.exists? './conf/houcho.conf'
+
+    File.write('./conf/rspec.conf', '--format documentation') if ! File.exists? './conf/rspec.conf'
+    File.symlink('./conf/rspec.conf', './.rspec') if ! File.exists? './.rspec'
+
+    %w{
+      runlists.yaml
+      roles.yaml
+      hosts.yaml
+      specs.yaml
+      cf_roles.yaml
+      hosts_ignored.yaml
+      cloudforecast.yaml
+    }.each do |f|
+      f = 'role/' + f
+      File.write(f, '') if ! File.exists? f
+  end
+end

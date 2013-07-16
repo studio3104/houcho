@@ -1,14 +1,12 @@
 #!/usr/bin/env ruby
 # -*- encoding: utf-8 -*-
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), *%w[.. lib])
 
-app_dir = File.expand_path("#{File.dirname(__FILE__)}/..")
 require 'rubygems'
 require 'thor'
-require app_dir + '/lib/Conductor'
+require 'houcho'
 
-def conduct
-  Conductor.new
-end
+include Houcho
 
 class Thor::MyHelper < Thor
   class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message.'
@@ -29,27 +27,27 @@ class Thor::MyHelper < Thor
 end
 
 
-class Spec < Thor::MyHelper
+class SpecConduct < Thor::MyHelper
   namespace :spec
 
   desc 'details [spec]', 'show details about a spec'
   def details(spec)
-    conduct.show_spec_details(spec)
+    show_spec_details(spec)
   end
 
   desc 'show', 'show all of specs'
   def show
-    conduct.show_all_specs
+    puts Spec.elements.sort.join("\n")
   end
 
   desc 'attach [spec] [role]', 'attach a spec to a role'
   def attach(spec, role)
-    conduct.attach_spec_to_role(spec, role)
+    attach_spec_to_role(spec, role)
   end
 
   desc 'detach [spec] [role]', 'detach a spec from a role'
   def detach(spec, role)
-    conduct.detach_spec_from_role(spec, role)
+    detach_spec_from_role(spec, role)
   end
 
   desc 'check [options]', '指定specを、関連付けられているhostを適当に選んで実行させる'
@@ -59,7 +57,7 @@ class Spec < Thor::MyHelper
       self.class.task_help(shell, __method__)
       exit
     end
-    conduct.check_specs(options[:sample_host_count], args)
+    check_specs(options[:sample_host_count], args)
   end
 
   desc 'exec [options]', 'run serverspec'
@@ -78,7 +76,7 @@ class Spec < Thor::MyHelper
       exit
     end
 
-    conduct.runspec_prepare(
+    runspec_prepare(
       roles, hosts, specs,
       {
         ukigumo: options[:ukigumo],
@@ -90,147 +88,107 @@ class Spec < Thor::MyHelper
 end
 
 
-class Host < Thor::MyHelper
+class HostConduct < Thor::MyHelper
   namespace :host
 
   desc 'details [host]', 'show details about a host'
   def details(host)
-    conduct.show_host_details(host)
+    show_host_details(host)
   end
 
   desc 'show', 'show all of hosts'
   def show
-    conduct.show_all_hosts
+    show_all_hosts
   end
 
   desc 'attach [host] [role]', 'attach a host to a role'
   def attach(host, role)
-    conduct.attach_host_to_role(host, role)
+    attach_host_to_role(host, role)
   end
 
   desc 'detach [host] [role]', 'detach a host from a role'
   def detach(host, role)
-    conduct.detach_host_from_role(host, role)
+    detach_host_from_role(host, role)
   end
 
   desc "ignore [host]", "add host to ignore list"
   def ignore(host)
-    conduct.ignore_host(host)
+    ignore_host(host)
   end
 
   desc "disignore [host]", "delete host from ignore list"
   def disignore(host)
-    conduct.disignore_host(host)
+    disignore_host(host)
   end
 end
 
 
-class Role < Thor::MyHelper
+class RoleConduct < Thor::MyHelper
   namespace :role
 
   desc 'create [role]', 'cretate a role'
-  def create(role)
-    conduct.create_role(role)
+  def create(*args)
+    Role.create(args)
   end
 
   desc 'delete [role]', 'delete a role'
-  def delete(role)
-    conduct.delete_role(role)
+  def delete(*args)
+    Role.delete(args)
   end
 
   desc 'rename [exist role] [name]', 'rename a role'
   def rename(role, rename)
-    conduct.rename_role(role, rename)
+    Role.rename(role, rename)
   end
 
   desc 'details [role]', 'show details about a role'
   def details(role)
-    conduct.show_role_details(role)
+    puts_details(Role.details(role))
   end
 
   desc 'show', 'show all of roles'
   def show
-    conduct.show_all_roles
+    puts Role.all.join("\n")
   end
 end
 
 
-class CloudForecast < Thor::MyHelper
+class CFConduct < Thor::MyHelper
   namespace :cfrole
 
   desc "details [cfrole]", "show details about a cf's role"
   def details(cf_role)
-    conduct.show_cf_role_details(cf_role)
+    show_cf_role_details(cf_role)
   end
 
   desc 'show', "show all of cf's roles"
   def show
-    conduct.show_all_cf_roles
+    show_all_cf_roles
   end
 
   desc 'attach [cfrole] [role]', 'attach a cf role to a role'
   def attach(cf_role, role)
-    conduct.attach_cfrole_to_role(cf_role, role)
+    attach_cfrole_to_role(cf_role, role)
   end
 
   desc 'detach [cfrole] [role]', 'detach a cf role from a role'
   def detach(cf_role, role)
-    conduct.detach_cfrole_from_role(cf_role, role)
+    detach_cfrole_from_role(cf_role, role)
   end
 
   desc 'configure', '(re)loading yamls of cloudforecast'
   def configure
-    conduct.configure_houcho
+    configure_houcho
   end
 
 end
 
 
-class Runlist < Thor::MyHelper
-  namespace :runlist
-
-  desc 'create [runlist]', 'cretate a runlist'
-  def create(runlist)
-    conduct.create_runlist(runlist)
-  end
-
-  desc 'delete [runlist]', 'delete a runlist'
-  def delete(runlist)
-    conduct.delete_runlist(runlist)
-  end
-
-  desc 'include [role] [runlist]', 'include a role among a runlist'
-  def include(role, runlist)
-    conduct.include_role_among_runlist(role, runlist)
-  end
-
-  desc 'exclude [role] [runlist]', 'exclude a role from a runlist'
-  def exclude(role, runlist)
-    conduct.exclude_role_from_runlist(role, runlist)
-  end
-
-  desc 'rename [exist runlist] [name]', 'rename a runlist'
-  def rename(runlist, rename)
-    conduct.rename_runlist(runlist, rename)
-  end
-
-  desc 'details [runlist]', 'show details about a runlist'
-  def details(runlist)
-    conduct.show_runlist_details(runlist)
-  end
-
-  desc 'show', 'show all of runlists'
-  def show
-    conduct.show_all_runlists
-  end
-end
-
-
-class Houcho < Thor
-  register(CloudForecast, 'cfrole', 'cfrole [attach|detach|show|details|configure]', 'cloudforecastをのyamlから情報を読み込んで操作します')
-  register(Role, 'role', 'role [create|delete|rename|details|show]', 'roleを追加したり情報を表示したり')
-  register(Host, 'host', 'host [attach|detach|show|details|ignore|disignore]', 'hostを追加したり情報を表示したり')
-  register(Spec, 'spec', 'spec [attach|detach|show|details|exec|check]', 'specを追加したり情報を表示したり')
+class Main < Thor
+  register(CFConduct, 'cfrole', 'cfrole [attach|detach|show|details|configure]', 'cloudforecastをのyamlから情報を読み込んで操作します')
+  register(RoleConduct, 'role', 'role [create|delete|rename|details|show]', 'roleを追加したり情報を表示したり')
+  register(HostConduct, 'host', 'host [attach|detach|show|details|ignore|disignore]', 'hostを追加したり情報を表示したり')
+  register(SpecConduct, 'spec', 'spec [attach|detach|show|details|exec|check]', 'specを追加したり情報を表示したり')
 
   class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message.'
   no_tasks do
@@ -245,10 +203,10 @@ class Houcho < Thor
 
   desc 'init', 'set houcho repository on current directory'
   def init
-    conduct.initialize_houcho
+    initialize_houcho
   end
 
 end
 
-Houcho.start
+Main.start
 exit! if $fail_runspec
