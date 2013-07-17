@@ -8,6 +8,15 @@ require 'houcho'
 
 include Houcho
 
+module Helper
+  module_function
+
+  def empty_args(klass, chell, mesod)
+    klass.class.task_help(chell, mesod)
+    exit
+  end
+end
+
 class Thor::MyHelper < Thor
   class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message.'
 
@@ -40,24 +49,25 @@ class SpecConduct < Thor::MyHelper
     puts Spec.elements.sort.join("\n")
   end
 
-  desc 'attach [spec] [role]', 'attach a spec to a role'
-  def attach(spec, role)
-    attach_spec_to_role(spec, role)
+  desc 'attach [spec1 spec2 spec3...] --roles [role1 role2...]', 'attach spec to role'
+  option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
+  def attach(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    Spec.attach(args, options[:roles])
   end
 
-  desc 'detach [spec] [role]', 'detach a spec from a role'
-  def detach(spec, role)
-    detach_spec_from_role(spec, role)
+  desc 'detach [spec1 spec2 spec3...] --roles [role1 role2...]', 'detach spec from spec'
+  option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
+  def detach(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    Spec.detach(args, options[:roles])
   end
 
-  desc 'check [options]', '指定specを、関連付けられているhostを適当に選んで実行させる'
-  option :sample_host_count, :type => :numeric, :default => 5, :desc => 'サンプルホスト数'
+  desc 'check [options]', 'run the spec sampled appropriately to the associated host'
+  option :sample_host_count, :type => :numeric, :default => 5, :desc => 'number of sample hosts'
   def check(*args)
-    if args.empty?
-      self.class.task_help(shell, __method__)
-      exit
-    end
-    check_specs(options[:sample_host_count], args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    check_specs(args, options[:sample_host_count])
   end
 
   desc 'exec [options]', 'run serverspec'
@@ -101,14 +111,18 @@ class HostConduct < Thor::MyHelper
     show_all_hosts
   end
 
-  desc 'attach [host] [role]', 'attach a host to a role'
-  def attach(host, role)
-    attach_host_to_role(host, role)
+  desc 'attach [host1 host2 host3...] --roles [role1 role2...]', 'attach host to role'
+  option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
+  def attach(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    Host.attach(args, options[:roles])
   end
 
-  desc 'detach [host] [role]', 'detach a host from a role'
-  def detach(host, role)
-    detach_host_from_role(host, role)
+  desc 'detach [host1 host2 host3...] --roles [role1 role2...]', 'detach host from role'
+  option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
+  def detach(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    Host.detach(args, options[:roles])
   end
 
   desc "ignore [host]", "add host to ignore list"
@@ -126,13 +140,15 @@ end
 class RoleConduct < Thor::MyHelper
   namespace :role
 
-  desc 'create [role]', 'cretate a role'
+  desc 'create [role1 role2 role3...]', 'cretate role'
   def create(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
     Role.create(args)
   end
 
-  desc 'delete [role]', 'delete a role'
+  desc 'delete [role1 role2 role3...]', 'delete a role'
   def delete(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
     Role.delete(args)
   end
 
@@ -154,41 +170,44 @@ end
 
 
 class CFConduct < Thor::MyHelper
-  namespace :cfrole
+  namespace :cf
 
-  desc "details [cfrole]", "show details about a cf's role"
+  desc "details [cfrole]", "show details about a cloudforecast's role"
   def details(cf_role)
     show_cf_role_details(cf_role)
   end
 
-  desc 'show', "show all of cf's roles"
+  desc 'show', "show all of cloudforecast's roles"
   def show
     show_all_cf_roles
   end
 
-  desc 'attach [cfrole] [role]', 'attach a cf role to a role'
-  def attach(cf_role, role)
-    attach_cfrole_to_role(cf_role, role)
+  desc 'attach [cf1 cf2 cf3...] --roles [role1 role2...]', "attach cloudforecast's role to role"
+  option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
+  def attach(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    CloudForecast::Role.attach(args, options[:roles])
   end
 
-  desc 'detach [cfrole] [role]', 'detach a cf role from a role'
-  def detach(cf_role, role)
-    detach_cfrole_from_role(cf_role, role)
+  desc 'detach [cf1 cf2 cf3...] --roles [role1 role2...]', "detach cloudforecast's role from role"
+  option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
+  def attach(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    CloudForecast::Role.detach(args, options[:roles])
   end
 
   desc 'configure', '(re)loading yamls of cloudforecast'
   def configure
     configure_houcho
   end
-
 end
 
 
 class Main < Thor
-  register(CFConduct, 'cfrole', 'cfrole [attach|detach|show|details|configure]', 'cloudforecastをのyamlから情報を読み込んで操作します')
-  register(RoleConduct, 'role', 'role [create|delete|rename|details|show]', 'roleを追加したり情報を表示したり')
-  register(HostConduct, 'host', 'host [attach|detach|show|details|ignore|disignore]', 'hostを追加したり情報を表示したり')
-  register(SpecConduct, 'spec', 'spec [attach|detach|show|details|exec|check]', 'specを追加したり情報を表示したり')
+  register(CFConduct,   'cf',   'cf [attach|detach|show|details|configure]', 'operate relevant to CloudForecast')
+  register(RoleConduct, 'role', 'role [create|delete|rename|details|show]', 'oprate roles')
+  register(HostConduct, 'host', 'host [attach|detach|show|details|ignore|disignore]', 'operate hosts')
+  register(SpecConduct, 'spec', 'spec [attach|detach|show|details|exec|check]', 'operate specs')
 
   class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message.'
   no_tasks do

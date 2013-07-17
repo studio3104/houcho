@@ -1,3 +1,4 @@
-module Houcho::SpecRunner
+module Houcho::Spec::Runner
+
 
 end

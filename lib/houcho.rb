@@ -58,8 +58,8 @@ module Houcho
 
 
   def show_host_details(host)
-    h       = hosthandle
-    r       = rolehandle
+    h       = Host
+    r       = Role
     indexes = h.indexes(host)
     cfroles = cfload.select {|role, hosts|hosts.include?(host)}.keys
 
@@ -76,12 +76,10 @@ module Houcho
 
     if ! cfroles.empty?
       cf = cfrolehandle
-      ih = ignorehosthandle
       result[host]["[cloudforecast's role]"] = {}
       cfroles.each do |cfrole|
         result[host]["[cloudforecast's role]"][cfrole] = []
         cf.indexes(cfrole).each do |index|
-          res = ih.data.include?(host) ? '<ignored>' + r.name(index) + '</ignored>' : r.name(index)
           result[host]["[cloudforecast's role]"][cfrole] << res
         end
       end
@@ -111,84 +109,13 @@ module Houcho
   end
 
 
-  def attach_host_to_role(host, role)
-    Host.test
-#    index = validate_role(role)
-#    abort("#{host} has already attached to #{role}") if Host.attached?(index, host)
-#    Host.attach(index, host)
-  end
-
-
-  def detach_host_from_role(host, role)
-    index = validate_role(role)
-    h     = hosthandle
-    abort("#{host} does not attach to #{role}") if ! h.attached?(index, host)
-    h.detach(index, host)
-  end
-
-
-  def ignore_host(host)
-    ih = ignorehosthandle
-    ih.data = Hash === ih.data ? [] : ih.data
-    abort("#{host} has already included into ignore list") if ih.data.include?(host)
-    ih.data << host
-    ih.save_to_file
-  end
-
-
-  def disignore_host(host)
-    ih = ignorehosthandle
-    ih.data = Hash === ih.data ? [] : ih.data
-    abort("#{host} does not include into ignore list") if ! ih.data.include?(host)
-    ih.data.delete(host)
-    ih.save_to_file
-  end
-
-
-  def attach_spec_to_role(spec, role)
-    index = validate_role(role)
-    s     = spechandle
-    abort("#{spec} already attach to #{role}") if s.attached?(index, spec)
-    s.attach(index, spec)
-  end
-
-
-  def detach_spec_from_role(spec, role)
-    index = validate_role(role)
-    s     = spechandle
-    abort("#{spec} does not attach to #{role}") if ! s.attached?(index, spec)
-    s.detach(index, spec)
-  end
-
-
-  def attach_cfrole_to_role(cf_role, role)
-    index = validate_role(role)
-    cr    = cfrolehandle
-    abort("#{cf_role} does not exist in cloudforecast's yaml") if ! cfload.has_key?(cf_role)
-    abort("#{cf_role} already attach to #{role}") if cr.attached?(index, cf_role)
-    cr.attach(index, cf_role)
-  end
-
-
-  def detach_cfrole_from_role(cf_role, role)
-    index = validate_role(role)
-    cr    = cfrolehandle
-    abort("#{cf_role} does not attach to #{role}") if ! cr.attached?(index, cf_role)
-    cr.detach(index, cf_role)
-  end
-
-
-  def check_specs(*args)
-    host_count = args.shift
-    specs      = args.flatten
-    s          = spechandle
-    h          = hosthandle
-    cr         = cfrolehandle
-    rh         = cfload
+  def check_specs(specs, host_count)
+    specs = specs.flatten
+    rh    = cfload
 
     specs.each do |spec|
       hosts   = []
-      indexes = s.indexes(spec)
+      indexes = Spec.indexes(spec)
 
       if indexes.empty?
         puts "#{spec} has not attached to any roles"
@@ -196,18 +123,13 @@ module Houcho
       end
 
       indexes.each do |index|
-        hosts += h.elements(index)
-        cr.elements(index).each do |cfrole|
+        hosts += Host.elements(index)
+        CloudForecast::Role.elements(index).each do |cfrole|
           hosts += rh[cfrole]
         end
       end
       hosts.sample(host_count).each {|host| runspec(nil, host, [spec])}
     end
-  end
-
-
-  def runspec_all(ci, dry)
-    roles = RoleHandle::YamlLoader.new('./role/roles.yaml').data.values.sort
   end
 
 
@@ -228,7 +150,6 @@ module Houcho
       e.sort.each.with_index(1) do |v, i|
         (indentsize-1).times {print '   '}
         print i != e.size ? '├─ ' : '└─ '
-        puts v =~ /^<ignored>.*<\/ignored>$/ ? v.color(:red) : v.color(240,230,140)
       end
       puts ''
     when Hash
@@ -270,7 +191,6 @@ module Houcho
           _hosts += rh[cf_role]
         end
 
-        _hosts = (hosts + _hosts).uniq - ignorehosthandle.data.to_a
         role_host_specs[_role] = {}
 
         _hosts.each do |host|
@@ -296,7 +216,7 @@ module Houcho
   end
 
   def cfload
-    RoleHandle::YamlLoader.new('./role/cloudforecast.yaml').data
+    YamlHandle::Loader.new('./role/cloudforecast.yaml').data
   end
 
   def runlisthandle
@@ -313,10 +233,6 @@ module Houcho
 
   def hosthandle
     RoleHandle::ElementHandler.new('./role/hosts.yaml')
-  end
-
-  def ignorehosthandle
-    RoleHandle::YamlEditor.new('./role/hosts_ignored.yaml')
   end
 
   def spechandle

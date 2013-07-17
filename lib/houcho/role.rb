@@ -77,8 +77,17 @@ module Houcho
     end
 
 
-    def details(role)
-      index = self.valid?(role)
+    def details(roles)
+      invalid_roles = []
+
+      roles.each do |role|
+        index = self.index(role)
+
+        if ! index
+          invalid_roles << role
+          next
+        end
+      abort("role(#{role}) does not exist") if ! index
 
       ih = YamlHandle::Editor.new('./role/hosts_ignored.yaml')
 
@@ -86,7 +95,7 @@ module Houcho
       specs   = Spec.elements(index)
       cfroles = CloudForecast::Role.elements(index)
 
-      result = {role => {}}
+      result[role] = {}
 
       if ! hosts.empty?
         hosts.each do |h|
@@ -95,6 +104,7 @@ module Houcho
           result[role]['[host]'] << host
         end
       end
+
       result[role]['[spec]'] = specs if ! specs.empty?
 
       if ! cfroles.empty?
@@ -112,19 +122,10 @@ module Houcho
         end
       end
 
-      result
-    end
-
-
-    def valid?(role)
-      if Regexp === role
-        indexes = Role.indexes_regexp(role)
-        abort if indexes.empty?
-        indexes
+      if roles.empty?
+        result
       else
-        index = Role.index(role)
-        abort("role(#{role}) does not exist") if ! index
-        index
+        self.details(roles, result)
       end
     end
 
