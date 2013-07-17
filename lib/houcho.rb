@@ -7,10 +7,10 @@ require 'tempfile'
 require 'find'
 require 'yaml'
 require 'json'
+require 'houcho/initialize'
 #require 'houcho/ci'
 require 'houcho/role'
-#require 'houcho/host'
-require 'houcho/initialize'
+require 'houcho/host'
 
 module Houcho
   def configure_houcho
@@ -21,7 +21,7 @@ module Houcho
       end
     end
 
-    cf = RoleHandle::CfLoader.new(cf_yamls)
+    cf = YamlHandle::CfLoader.new(cf_yamls)
     File.write('./role/cloudforecast.yaml', cf.role_hosts.to_yaml)
   end
 
@@ -150,6 +150,7 @@ module Houcho
       e.sort.each.with_index(1) do |v, i|
         (indentsize-1).times {print '   '}
         print i != e.size ? '├─ ' : '└─ '
+        puts v
       end
       puts ''
     when Hash
@@ -157,8 +158,9 @@ module Houcho
         if ! indentsize.zero?
           (indentsize).times {print '   '}
         end
-        puts k =~ /^\[.*\]$/ ? k : k.color(0,255,0)
-        puts '' if indentsize.zero?
+        k = k.color(0,255,0)
+        k = '[' + k.color(219,112,147) + ']' if indentsize.zero?
+        puts k
         puts_details(v, indentsize+1, cnt+1)
       end
     end

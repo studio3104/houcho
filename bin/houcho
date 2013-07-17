@@ -39,9 +39,10 @@ end
 class SpecConduct < Thor::MyHelper
   namespace :spec
 
-  desc 'details [spec]', 'show details about a spec'
-  def details(spec)
-    show_spec_details(spec)
+  desc 'details [spec1 spec2 spec3...]', 'show details about spec'
+  def details(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    puts_details(Spec.details(args))
   end
 
   desc 'show', 'show all of specs'
@@ -101,9 +102,10 @@ end
 class HostConduct < Thor::MyHelper
   namespace :host
 
-  desc 'details [host]', 'show details about a host'
-  def details(host)
-    show_host_details(host)
+  desc 'details [host1 host2 host3...]', 'show details about host'
+  def details(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    puts_details(Host.details(args))
   end
 
   desc 'show', 'show all of hosts'
@@ -123,16 +125,6 @@ class HostConduct < Thor::MyHelper
   def detach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
     Host.detach(args, options[:roles])
-  end
-
-  desc "ignore [host]", "add host to ignore list"
-  def ignore(host)
-    ignore_host(host)
-  end
-
-  desc "disignore [host]", "delete host from ignore list"
-  def disignore(host)
-    disignore_host(host)
   end
 end
 
@@ -157,9 +149,10 @@ class RoleConduct < Thor::MyHelper
     Role.rename(role, rename)
   end
 
-  desc 'details [role]', 'show details about a role'
-  def details(role)
-    puts_details(Role.details(role))
+  desc 'details [role1 role2...]', 'show details about role'
+  def details(*args)
+    indexes = args.map {|role| Role.index(role)}
+    puts_details(Role.details(indexes))
   end
 
   desc 'show', 'show all of roles'
@@ -172,9 +165,10 @@ end
 class CFConduct < Thor::MyHelper
   namespace :cf
 
-  desc "details [cfrole]", "show details about a cloudforecast's role"
-  def details(cf_role)
-    show_cf_role_details(cf_role)
+  desc "details [cf1 cf2 cf3...]", "show details about cloudforecast's role"
+  def details(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    puts_details(CloudForecast::Role.details(args))
   end
 
   desc 'show', "show all of cloudforecast's roles"
@@ -191,7 +185,7 @@ class CFConduct < Thor::MyHelper
 
   desc 'detach [cf1 cf2 cf3...] --roles [role1 role2...]', "detach cloudforecast's role from role"
   option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
-  def attach(*args)
+  def detach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
     CloudForecast::Role.detach(args, options[:roles])
   end

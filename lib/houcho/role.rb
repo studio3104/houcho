@@ -77,56 +77,29 @@ module Houcho
     end
 
 
-    def details(roles)
-      invalid_roles = []
+    def details(indexes)
+      result = {}
 
-      roles.each do |role|
-        index = self.index(role)
+      indexes.each do |index|
+        role  = self.name(index)
+        next if ! role
 
-        if ! index
-          invalid_roles << role
-          next
-        end
-      abort("role(#{role}) does not exist") if ! index
+        hosts   = Host.elements(index)
+        specs   = Spec.elements(index)
+        cfroles = CloudForecast::Role.elements(index)
+        cfhosts = YamlHandle::Loader.new('./role/cloudforecast.yaml').data
 
-      ih = YamlHandle::Editor.new('./role/hosts_ignored.yaml')
+        result[role] = {}
+        result[role]['host'] = hosts if ! hosts.empty?
+        result[role]['spec'] = specs if ! specs.empty?
 
-      hosts   = Host.elements(index)
-      specs   = Spec.elements(index)
-      cfroles = CloudForecast::Role.elements(index)
-
-      result[role] = {}
-
-      if ! hosts.empty?
-        hosts.each do |h|
-          host = ih.data.include?(h) ? '<ignored>' + h + '</ignored>' : h
-          result[role]['[host]'] ||= []
-          result[role]['[host]'] << host
+        result[role]['cf'] = {}
+        cfroles.each do |cfrole|
+          result[role]['cf'][cfrole] = cfhosts[cfrole]
         end
       end
 
-      result[role]['[spec]'] = specs if ! specs.empty?
-
-      if ! cfroles.empty?
-        rh = cfload
-        result[role]["[cloudforecast's]"] = {}
-        cfroles.each do |cr|
-          result[role]["[cloudforecast's]"][cr] = {}
-          if ! (rh[cr]||[]).empty?
-            result[role]["[cloudforecast's]"][cr]['[host]'] = []
-            rh[cr].each do |h|
-              host = ih.data.include?(h) ? '<ignored>' + h + '</ignored>' : h
-              result[role]["[cloudforecast's]"][cr]['[host]'] << host
-            end
-          end
-        end
-      end
-
-      if roles.empty?
-        result
-      else
-        self.details(roles, result)
-      end
+      result
     end
 
 
