@@ -174,9 +174,5 @@ studio3104::www
   ```
 
 ## TODO
-- testがない
-- attach|detachの引数を複数取れるようにする
-- host ignore|disignoreはなにやら変なので他のやりかた考える
-  - 引数を複数取れるようにもする
-  - disignoreって英語として変
-  - include|excludeにすれば実装はそのままでいいかな・・・
+- write test. test. test..............
+- `details` is strange. fix. fix. fix...

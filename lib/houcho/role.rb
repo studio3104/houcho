@@ -2,7 +2,7 @@
 require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/yamlhandle"
 require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/host"
 require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/spec"
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/cloudforecast/role"
+require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/cloudforecast/host"
 
 module Houcho
   module Role
@@ -77,26 +77,24 @@ module Houcho
     end
 
 
-    def details(indexes)
+    def details(roles)
       result = {}
 
-      indexes.each do |index|
-        role  = self.name(index)
-        next if ! role
+      roles.each do |role|
+        index = self.index(role)
+        next if ! index
 
         hosts   = Host.elements(index)
         specs   = Spec.elements(index)
         cfroles = CloudForecast::Role.elements(index)
-        cfhosts = YamlHandle::Loader.new('./role/cloudforecast.yaml').data
+        cfhosts = CloudForecast::Role.details(cfroles)
 
-        result[role] = {}
-        result[role]['host'] = hosts if ! hosts.empty?
-        result[role]['spec'] = specs if ! specs.empty?
+        r         = {}
+        r['host'] = hosts   if ! hosts.empty?
+        r['spec'] = specs   if ! specs.empty?
+        r['cf']   = cfhosts if ! cfhosts.empty?
 
-        result[role]['cf'] = {}
-        cfroles.each do |cfrole|
-          result[role]['cf'][cfrole] = cfhosts[cfrole]
-        end
+        result[role] = r
       end
 
       result

@@ -1,7 +1,3 @@
-# -*- encoding: utf-8 -*-
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/yamlhandle"
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/role"
-
 module Houcho
   module Element
 
@@ -64,6 +60,15 @@ module Houcho
     def indexes(element)
       return [] if ! @elements.data.values.flatten.include?(element)
       @elements.data.select {|index, elems|elems.include?(element)}.keys
+    end
+
+
+    def details(elements)
+      result = {}
+      elements.each do |element|
+        result[element] = { 'role' => self.indexes(element).map {|index|Role.name(index)} }
+      end
+      result
     end
   end
 end

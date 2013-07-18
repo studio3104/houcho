@@ -7,20 +7,18 @@ module Houcho
     @elements = YamlHandle::Editor.new('./role/hosts.yaml')
     extend Element
 
-    def self.details(elements)
-      require 'awesome_print'
+    def self.details(hosts)
       result  = {}
 
-      elements.each do |element|
-        cfhostdetails = CloudForecast::Host.details(element)
-        hostdetails   = Role.details(indexes(element))
+      hosts.each do |host|
+        roles = self.indexes(host).map {|index|Role.name(index)}
+        cfroles = CloudForecast::Host.roles(host)
 
-        cfhostdetails.clone.each do |cfrole, values|
-          cfhostdetails.delete(cfrole) if hostdetails == values
-        end
+        result[host]         = {}
+        result[host]['role'] = roles   if ! roles.empty?
+        result[host]['cf']   = cfroles if ! cfroles.empty?
 
-        result[element] = hostdetails.merge(cfhostdetails)
-        result.delete(element) if result[element].empty?
+        result.delete(host) if result[host].keys.empty?
       end
       result
     end

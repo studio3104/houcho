@@ -11,6 +11,10 @@ module Houcho::CloudForecast
       @cfdata.select {|cfrole, cfhosts|cfhosts.include?(host)}.keys
     end
 
+    def hosts(role)
+      @cfdata[role] || []
+    end
+
     def details(host)
       CloudForecast::Role.details(roles(host))
     end

@@ -71,24 +71,16 @@ class SpecConduct < Thor::MyHelper
     check_specs(args, options[:sample_host_count])
   end
 
-  desc 'exec [options]', 'run serverspec'
-  option :hosts,   :type => :array,   :desc => 'hosts that run specs (required: --specs)'
-  option :specs,   :type => :array,   :desc => 'run specs (requied: --hosts)'
-  option :roles,   :type => :array,   :desc => 'runspecs by role'
+  desc 'exec (spec1 spec2..) [options]', 'run serverspec manually'
+  option :hosts,   :type => :array,   :desc => '--hosts host1 host2 host3...', :required => true
   option :ukigumo, :type => :boolean, :desc => 'post results to UkigumoServer'
   option :ikachan, :type => :boolean, :desc => 'post fail results to Ikachan'
   option :dry_run, :type => :boolean, :desc => 'show commands that may exexute'
-  def exec
-    hosts, specs, roles =
-      (options[:hosts]||[]), (options[:specs]||[]), (options[:roles]||[])
+  def exec(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
 
-    if (hosts + specs + roles).empty? || (hosts.empty? && ! specs.empty?) || (! hosts.empty? && specs.empty?)
-      self.class.task_help(shell, __method__)
-      exit
-    end
-
-    runspec_prepare(
-      roles, hosts, specs,
+    Spec::Runner.exec(
+      [], [], options[:hosts], args,
       {
         ukigumo: options[:ukigumo],
         ikachan: options[:ikachan],
@@ -151,13 +143,31 @@ class RoleConduct < Thor::MyHelper
 
   desc 'details [role1 role2...]', 'show details about role'
   def details(*args)
-    indexes = args.map {|role| Role.index(role)}
-    puts_details(Role.details(indexes))
+    Helper.empty_args(self, shell, __method__) if args.empty?
+    puts_details(Role.details(args))
   end
 
   desc 'show', 'show all of roles'
   def show
     puts Role.all.join("\n")
+  end
+
+  desc 'exec (role1 role2..) [options]', 'run role'
+  option :exclude_hosts, :type => :array, :desc => '--exclude-hosts host1 host2 host3...'
+  option :ukigumo, :type => :boolean, :desc => 'post results to UkigumoServer'
+  option :ikachan, :type => :boolean, :desc => 'post fail results to Ikachan'
+  option :dry_run, :type => :boolean, :desc => 'show commands that may exexute'
+  def exec(*args)
+    Helper.empty_args(self, shell, __method__) if args.empty?
+
+    Spec::Runner.exec(
+      args, (options[:exclude_hosts]||[]), [], [],
+      {
+        ukigumo: options[:ukigumo],
+        ikachan: options[:ikachan],
+      },
+      options[:dry_run],
+    )
   end
 end
 
@@ -200,7 +210,7 @@ end
 class Main < Thor
   register(CFConduct,   'cf',   'cf [attach|detach|show|details|configure]', 'operate relevant to CloudForecast')
   register(RoleConduct, 'role', 'role [create|delete|rename|details|show]', 'oprate roles')
-  register(HostConduct, 'host', 'host [attach|detach|show|details|ignore|disignore]', 'operate hosts')
+  register(HostConduct, 'host', 'host [attach|detach|show|details]', 'operate hosts')
   register(SpecConduct, 'spec', 'spec [attach|detach|show|details|exec|check]', 'operate specs')
 
   class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message.'
@@ -216,7 +226,7 @@ class Main < Thor
 
   desc 'init', 'set houcho repository on current directory'
   def init
-    initialize_houcho
+    Initialize
   end
 
 end

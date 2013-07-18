@@ -11,6 +11,8 @@ require 'houcho/initialize'
 #require 'houcho/ci'
 require 'houcho/role'
 require 'houcho/host'
+require 'houcho/spec'
+require 'houcho/spec/runner'
 
 module Houcho
   def configure_houcho
@@ -25,9 +27,6 @@ module Houcho
     File.write('./role/cloudforecast.yaml', cf.role_hosts.to_yaml)
   end
 
-  def initialize_houcho
-    Initialize
-  end
 
   def show_all_cf_roles
     puts cfload.keys.sort.join("\n")
@@ -35,101 +34,6 @@ module Houcho
 
   def show_all_hosts
     puts (CloudForecast::Role.values.flatten.uniq + Host.elements).join("\n")
-  end
-
-
-  def show_cf_role_details(cf_role)
-    rh = cfload
-    abort("#{cf_role} does not exist in cloudforecast's yaml") if ! rh.keys.include?(cf_role)
-
-    puts '[host(s)]'
-    puts rh[cf_role].join("\n")
-
-    attached_role_indexes = cfrolehandle.indexes(cf_role)
-    if ! attached_role_indexes.empty?
-      r = rolehandle
-      puts ''
-      puts '[attached role(s)]'
-      attached_role_indexes.each do |index|
-        puts r.name(index)
-      end
-    end
-  end
-
-
-  def show_host_details(host)
-    h       = Host
-    r       = Role
-    indexes = h.indexes(host)
-    cfroles = cfload.select {|role, hosts|hosts.include?(host)}.keys
-
-    abort("#{host} has not attached to any roles") if indexes.empty?  && cfroles.empty?
-
-    result = {host => {}}
-
-    if ! indexes.empty?
-      result[host]['[attached role(s)]'] = []
-      indexes.each do |index|
-        result[host]['[attached role(s)]'] << r.name(index)
-      end
-    end
-
-    if ! cfroles.empty?
-      cf = cfrolehandle
-      result[host]["[cloudforecast's role]"] = {}
-      cfroles.each do |cfrole|
-        result[host]["[cloudforecast's role]"][cfrole] = []
-        cf.indexes(cfrole).each do |index|
-          result[host]["[cloudforecast's role]"][cfrole] << res
-        end
-      end
-    end
-
-    puts_details(result)
-  end
-
-
-  def show_spec_details(spec)
-    s       = spechandle
-    r       = rolehandle
-    indexes = s.indexes(spec)
-
-    abort("#{spec} has not attached to any roles") if indexes.empty?
-
-    result = {spec => {}}
-
-    if ! indexes.empty?
-      result[spec]['[attached role(s)]'] = []
-      indexes.each do |index|
-        result[spec]['[attached role(s)]'] << r.name(index)
-      end
-    end
-
-    puts_details(result)
-  end
-
-
-  def check_specs(specs, host_count)
-    specs = specs.flatten
-    rh    = cfload
-
-    specs.each do |spec|
-      hosts   = []
-      indexes = Spec.indexes(spec)
-
-      if indexes.empty?
-        puts "#{spec} has not attached to any roles"
-        next
-      end
-
-      indexes.each do |index|
-        hosts += Host.elements(index)
-        CloudForecast::Role.elements(index).each do |cfrole|
-          hosts += rh[cfrole]
-        end
-      end
-      hosts.sample(host_count).each {|host| runspec(nil, host, [spec])}
-    end
   end
 
 
@@ -239,54 +143,5 @@ module Houcho
 
   def spechandle
     RoleHandle::ElementHandler.new('./role/specs.yaml')
-  end
-
-  def runspec(role, host, specs, ci = {}, dryrun = nil)
-    executable_specs = []
-    specs.each do |spec|
-      if spec =~ /_spec.rb$/
-        executable_specs << spec
-      else
-        executable_specs << 'spec/' + spec + '_spec.rb'
-      end
-    end
-
-    command = "parallel_rspec #{executable_specs.sort.uniq.join(' ')}"
-
-    if dryrun
-      puts 'TARGET_HOST=' + host + ' ' + command
-      return
-    end
-
-    ENV['TARGET_HOST'] = host
-    result = systemu command
-    result_status = result[0] == 0 ? 1 : 2
-    puts result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp + "\t#{host}, #{executable_specs}\n"
-
-    if ci[:ukigumo]
-      @conf = YAML.load_file('conf/houcho.conf')
-      ukigumo_report = CI::UkigumoClient.new(@conf['ukigumo']['host'], @conf['ukigumo']['port']).post({
-        :status   => result_status,
-        :project  => role,
-        :branch   => host.gsub(/\./, '-'),
-        :repo     => @conf['git']['uri'],
-        :revision => `git log spec/| grep '^commit' | head -1 | awk '{print $2}'`.chomp,
-        :vc_log   => command,
-        :body     => result[1],
-      })
-    end
-
-    if ci[:ikachan] && result_status != 1
-      message  = "[serverspec fail]\`TARGET_HOST=#{host} #{command}\` "
-      message += JSON.parse(ukigumo_report)['report']['url'] if ukigumo_report
-      @conf = YAML.load_file('conf/houcho.conf')
-      CI::IkachanClient.new(
-        @conf['ikachan']['channel'],
-        @conf['ikachan']['host'],
-        @conf['ikachan']['port']
-      ).post(message)
-    end
-
-    $fail_runspec = true if result_status != 1
   end
 end
