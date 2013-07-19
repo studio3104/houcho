@@ -68,7 +68,7 @@ class SpecConduct < Thor::MyHelper
   option :sample_host_count, :type => :numeric, :default => 5, :desc => 'number of sample hosts'
   def check(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    check_specs(args, options[:sample_host_count])
+    Spec::Runner.check(args, options[:sample_host_count])
   end
 
   desc 'exec (spec1 spec2..) [options]', 'run serverspec manually'
@@ -102,7 +102,7 @@ class HostConduct < Thor::MyHelper
 
   desc 'show', 'show all of hosts'
   def show
-    show_all_hosts
+    puts (Host.elements + CloudForecast::Host.all).join("\n")
   end
 
   desc 'attach [host1 host2 host3...] --roles [role1 role2...]', 'attach host to role'
@@ -183,7 +183,7 @@ class CFConduct < Thor::MyHelper
 
   desc 'show', "show all of cloudforecast's roles"
   def show
-    show_all_cf_roles
+    puts CloudForecast::Role.all.sort.join("\n")
   end
 
   desc 'attach [cf1 cf2 cf3...] --roles [role1 role2...]', "attach cloudforecast's role to role"
@@ -200,23 +200,23 @@ class CFConduct < Thor::MyHelper
     CloudForecast::Role.detach(args, options[:roles])
   end
 
-  desc 'configure', '(re)loading yamls of cloudforecast'
-  def configure
-    configure_houcho
+  desc 'load', '(re)loading yamls of cloudforecast'
+  def load
+    CloudForecast.load_yaml
   end
 end
 
 
 class Main < Thor
-  register(CFConduct,   'cf',   'cf [attach|detach|show|details|configure]', 'operate relevant to CloudForecast')
-  register(RoleConduct, 'role', 'role [create|delete|rename|details|show]', 'oprate roles')
+  register(CFConduct,   'cf',   'cf [attach|detach|show|details|load]', 'operate relevant to CloudForecast')
+  register(RoleConduct, 'role', 'role [create|delete|rename|show|details|exec]', 'operate roles')
   register(HostConduct, 'host', 'host [attach|detach|show|details]', 'operate hosts')
   register(SpecConduct, 'spec', 'spec [attach|detach|show|details|exec|check]', 'operate specs')
 
   class_option :help, :type => :boolean, :aliases => '-h', :desc => 'Help message.'
   no_tasks do
     def invoke_task(task, *args)
-      if options[:help] && ! %w{role host spec exec cf help}.include?(task.name)
+      if options[:help] && ! %w{role host spec cf help}.include?(task.name)
         Houcho.task_help(shell, task.name)
       else
         super
@@ -232,4 +232,4 @@ class Main < Thor
 end
 
 Main.start
-exit! if $fail_runspec
+exit! if $houcho_fail

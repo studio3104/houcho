@@ -1,13 +1,20 @@
 module Houcho
   module Spec::Runner
-
-    require 'awesome_print'
     module_function
+
     def prepare(roles, ex_hosts, hosts, specs)
-      runlist = {}
+      runlist        = {}
+      spec_not_exist = []
+
+      spec_check = Proc.new do |specs|
+        p = specs.map {|spec|'spec/' + spec + '_spec.rb'}.partition {|spes|File.exist?(spes)}
+        spec_not_exist += p[1].map {|e|e.sub(/^spec\//,'').sub(/_spec.rb$/,'')}
+        p[0]
+      end
+
       Role.details(roles).each do |role, detail|
         r         = {}
-        r['spec'] = (detail['spec']||[]).map {|spec| 'spec/' + spec + '_spec.rb'}
+        r['spec'] = spec_check.call(detail['spec']||[])
         r['host'] = detail['host']||[]
 
         (detail['cf']||{}).each do |cfrole, value|
@@ -19,17 +26,22 @@ module Houcho
       end
 
       m         = {}
-      m['host'] = hosts if ! hosts.empty?
-      m['spec'] = specs.map {|spec| 'spec/' + spec + '_spec.rb'} if ! specs.empty?
+      m['host'] = hosts
+      m['spec'] = spec_check.call(specs)
 
       runlist[:'run manually'] = m if m != {}
 
+      if ! spec_not_exist.empty?
+        $houcho_fail = true
+        puts "spec(#{spec_not_exist.join(',')}) file not exist in ./spec directory."
+      end
       runlist
     end
 
 
     def exec(roles, ex_hosts, hosts, specs, ci = {}, dryrun = nil)
       self.prepare(roles, ex_hosts, hosts, specs).each do |role, v|
+        next if v['spec'].empty?
         command = "parallel_rspec #{v['spec'].sort.uniq.join(' ')}"
 
         if dryrun
@@ -42,24 +54,25 @@ module Houcho
         v['host'].each do |host|
           ENV['TARGET_HOST'] = host
           result = systemu command
-          result_status = result[0] == 0 ? 1 : 2
-          puts result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp + "\t#{host}, #{executable_specs}\n"
+          puts result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp + "\t#{host}, #{command}\n"
 
-          post_result(result, role, host, command, ci)
-          $fail_runspec = true if result_status != 1
+          post_result(result, role, host, command, ci) if ci != {}
+          $houcho_fail = true if result[0] != 0
         end
       end
     end
 
 
     def post_result(result, role, host, command, ci)
+      conf = YAML.load_file('conf/houcho.conf')
+      result_status = result[0] == 0 ? 1 : 2
+
       if ci[:ukigumo]
-        @conf = YAML.load_file('conf/houcho.conf')
-        ukigumo_report = CI::UkigumoClient.new(@conf['ukigumo']['host'], @conf['ukigumo']['port']).post({
+        ukigumo_report = CI::UkigumoClient.new(conf['ukigumo']['host'], conf['ukigumo']['port']).post({
           :status   => result_status,
           :project  => role,
           :branch   => host.gsub(/\./, '-'),
-          :repo     => @conf['git']['uri'],
+          :repo     => conf['git']['uri'],
           :revision => `git log spec/| grep '^commit' | head -1 | awk '{print $2}'`.chomp,
           :vc_log   => command,
           :body     => result[1],
@@ -69,21 +82,17 @@ module Houcho
       if ci[:ikachan] && result_status != 1
         message  = "[serverspec fail]\`TARGET_HOST=#{host} #{command}\` "
         message += JSON.parse(ukigumo_report)['report']['url'] if ukigumo_report
-        @conf = YAML.load_file('conf/houcho.conf')
         CI::IkachanClient.new(
-          @conf['ikachan']['channel'],
-          @conf['ikachan']['host'],
-          @conf['ikachan']['port']
+          conf['ikachan']['channel'],
+          conf['ikachan']['host'],
+          conf['ikachan']['port']
         ).post(message)
       end
     end
 
 
     def check(specs, host_count)
-      puts 'work in progress'; exit
-
       specs = specs.flatten
-      rh    = cfload
 
       specs.each do |spec|
         hosts   = []
@@ -97,10 +106,10 @@ module Houcho
         indexes.each do |index|
           hosts += Host.elements(index)
           CloudForecast::Role.elements(index).each do |cfrole|
-            hosts += rh[cfrole]
+            hosts += CloudForecast::Host(cfrole)
           end
         end
-        hosts.sample(host_count).each {|host| runspec(nil, host, [spec])}
+        hosts.sample(host_count).each {|host| exec([], [], [host], [spec])}
       end
     end
   end

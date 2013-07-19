@@ -1,6 +1,11 @@
 require 'net/http'
 require 'uri'
 
+module Houcho
+  module CI
+  end
+end
+
 module Houcho::CI
   class UkigumoClient
     def initialize(server, port = 80, url = "http://#{server}:#{port}")
@@ -57,5 +62,4 @@ module Houcho::CI
       end
     end
   end
-
 end

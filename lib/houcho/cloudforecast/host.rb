@@ -1,8 +1,5 @@
-# -*- encoding: utf-8 -*-
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/role"
-
-module Houcho::CloudForecast
-  module Host
+module Houcho
+  module CloudForecast::Host
     @cfdata = YamlHandle::Loader.new('./role/cloudforecast.yaml').data
 
     module_function
@@ -17,6 +14,10 @@ module Houcho::CloudForecast
 
     def details(host)
       CloudForecast::Role.details(roles(host))
+    end
+
+    def all
+      @cfdata.values.flatten.uniq
     end
   end
 end

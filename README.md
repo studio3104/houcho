@@ -1,5 +1,6 @@
 # Houcho
 - wrapping to execute serverspec
+- depends on ruby 1.9 later.
 
 ## Install and Initialize
 - install houcho from ruby gems
@@ -9,9 +10,8 @@
   ```
 
 - make working directory and initialize.
-  - このディレクトリ配下にrole情報やspecなどが蓄積されます。
-  - `houcho init` `git init`されます。
-  
+  - when `houcho init` then `git init`
+
   ```sh
 $ mkdir houcho-repo
 $ cd houcho-repo
@@ -22,15 +22,15 @@ $ houcho init
 - example of the most simplest use case
 
   ```sh
-  $ houcho spec exec --specs houcho_sample --hosts test.studio3104.com 
+  $ houcho spec exec houcho_sample --hosts test.studio3104.com 
   ```
 
-  - run `houcho_sample_spec.rb` ro `test.studio3104.com`
-  - arguments of `--specs` and `--hosts` are able to specify multiple space-delimited.
-  - argument of `--specs` is able to specify exception of `_spec.rb`, and relative path from `spec/` under working directory.
+  - run `houcho_sample_spec.rb` to `test.studio3104.com`
+  - arguments are able to specify multiple space-delimited.
+  - argument of `spec exec` is able to specify exception of `_spec.rb`, and relative path from `spec/` under working directory.
 
 ## Create Role, Run Role
-よく使う組み合わせをroleとして定義しておくことが出来ます。
+Houcho is able to define role of combination to be used well.
 
 - create role at first.
 
@@ -38,104 +38,92 @@ $ houcho init
   $ houcho role create studio3104::www
   ```
 
-- attach a host to role just created.
+- attach hosts to role just created.
 
   ```sh
-  $ houcho host attach www01.studio3104.com studio3104::www
-  $ houcho host attach www02.studio3104.com studio3104::www
+  $ houcho host attach www01.studio3104.com www02.studio3104.com --roles studio3104::www
   ```
     
-- attach a spec to role.
+- attach specs to role.
 - argument is able to specify exception of `_spec.rb`, and relative path from `spec/` under working directory same as simple usage.
     
   ```sh
-  $ houcho spec attach houcho_sample studio3104::www
+  $ houcho spec attach houcho_sample houcho_sample2 --roles studio3104::www
   ```
 
 - show details of a role just created.
 
   ```sh
 $ houcho role details studio3104::www
-studio3104::www
-
-   [host]
+[studio3104::www]
+   host
    ├─ www01.studio3104.com
    └─ www02.studio3104.com
 
-   [spec]
-   └─ houcho_sample
+   spec
+   ├─ houcho_sample
+   └─ houcho_sample2
   ```
 
 - execute role.
 - it can specify multiple space-delimited.
   
   ```sh
-  $ houcho spec exec --roles studio3104::www
+  $ houcho role exec studio3104::www
   ```
   
 - it is also possible to use regular expressions.
   
   ```sh
-  $ houcho spec exec --roles studio3104.+
+  $ houcho role exec studio3104.+
   ```
 
 
 ## Include CloudForecast's yaml file
-houcho can load yaml of CloudForecast, and attach to the role defined.
+Houcho is able to load yaml of CloudForecast, and attach to the role defined.
 
 - install yaml of CloudForecast to `role/cloudforecast/` under working directory.
-- 拡張子を`yaml`にしておく必要があります。
+- extension have to be yaml.
   
-- cloudforecastのyamlを読み込みます。(例では`role/cloudforecast/houcho_sample.yaml`を読み込んでいます。)
-  - yamlを置き換えるたびに実行してください。毎回実行する必要はありません。
+- load cloudforecast's yaml.
+  - run each time you replace the yaml. do not need to run every time.
   
   ```sh
-$ houcho cfrole configure
-$ houcho cfrole show
+$ houcho cf load
+$ houcho cf show
 houcho::author::studio3104
-$ houcho cfrole details houcho::author::studio3104
-[host(s)]
-studio3104.test
-studio3105.test
-studio3106.test
-studio3107.test
-studio3108.test
-studio3109.test
-studio3110.test
+$ houcho cf details houcho::author::studio3104
+[houcho::author::studio3104]
+   host
+   ├─ studio3104.test
+   └─ studio3105.test
   ```
     
-- cloudforecastから読み込んだroleを、定義済みのオリジナルroleにattachします。
-  - TODO: 複数指定出来るようにする。
+- attach to the original role defined, the role read from cloudforecast.
 
   ```sh
-$ houcho cfrole attach houcho::author::studio3104 studio3104::www
+$ houcho cf attach houcho::author::studio3104 --roles studio3104::www
 $ houcho role details studio3104::www
-studio3104::www
-
-   [host]
+[studio3104::www]
+   host
    ├─ www01.studio3104.com
    └─ www02.studio3104.com
 
-   [spec]
-   └─ houcho_sample
-
-   [cloudforecast's]
+   spec
+   ├─ houcho_sample
+   └─ houcho_sample2
+   
+   cf
       houcho::author::studio3104
-         [host]
+         host
          ├─ studio3104.test
-         ├─ studio3105.test
-         ├─ studio3106.test
-         ├─ studio3107.test
-         ├─ studio3108.test
-         ├─ studio3109.test
-         └─ studio3110.test
+         └─ studio3105.test
   ```
   
 ## Applied Usage
-- specを修正したときに、該当のspecが関連付けられているホストを適当にサンプリングして実行する。
-  - 複数指定可能。
-  - `--sample-host-count`でサンプル数を指定。(default: 5)
-  - simple usageと同じように、作業ディレクトリの`spec/`からの相対パスで、`_spec.rb`を除いて指定します。
+- at modified specs, run specs by sampling appropriately host.
+  - `--sample-host-count` can specifies the number of samples(default: 5)
+  - argument is able to specify exception of `_spec.rb`, and relative path from `spec/` under working directory same as simple usage.
   
   ```sh
 $ houcho spec check houcho_sample hogehogechan
@@ -147,32 +135,11 @@ $ houcho spec check houcho_sample hogehogechan
 hogehogechan has not attached to any roles
   ```
 
-- cloudforecastのroleに含まれている一部のホストを実行対象から外す。
+- Run exclude from the target some hosts that are included in the role of cloudforecast.
 
   ```sh
-$ houcho host ignore studio3109.test
-$ houcho role details studio3104::www
-studio3104::www
-
-   [host]
-   ├─ www01.studio3104.com
-   └─ www02.studio3104.com
-
-   [spec]
-   └─ houcho_sample
-
-   [cloudforecast's]
-      houcho::author::studio3104
-         [host]
-         ├─ <ignored>studio3109.test</ignored>
-         ├─ studio3104.test
-         ├─ studio3105.test
-         ├─ studio3106.test
-         ├─ studio3107.test
-         ├─ studio3108.test
-         └─ studio3110.test
+$ houcho role exec studio3104::www --exclude-hosts studio3104.test
   ```
 
 ## TODO
-- write test. test. test..............
-- `details` is strange. fix. fix. fix...
+- there is no tests…

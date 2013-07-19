@@ -1,9 +1,3 @@
-# -*- encoding: utf-8 -*-
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/yamlhandle"
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/host"
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/spec"
-require "#{File.expand_path("#{File.dirname(__FILE__)}/")}/cloudforecast/host"
-
 module Houcho
   module Role
     @roles = YamlHandle::Editor.new('./role/roles.yaml')
@@ -80,6 +74,15 @@ module Houcho
     def details(roles)
       result = {}
 
+      # too lengthy implementation... I think necessary to change...
+      roles = roles.map do |role|
+        if self.index(role)
+          role
+        else
+          self.indexes_regexp(Regexp.new(role)).map {|index|self.name(index)}
+        end
+      end.flatten.sort.uniq
+
       roles.each do |role|
         index = self.index(role)
         next if ! index
@@ -111,8 +114,8 @@ module Houcho
     end
 
 
-    def name(id)
-      @roles.data[id]
+    def name(index)
+      @roles.data[index]
     end
   end
 end

@@ -15,6 +15,10 @@ module Houcho
         end
         result
       end
+
+      def self.all
+        YamlHandle::Loader.new('./role/cloudforecast.yaml').data.keys
+      end
     end
   end
 end
