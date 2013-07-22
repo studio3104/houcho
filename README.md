@@ -1,6 +1,6 @@
 # Houcho
 - wrapping to execute serverspec
-- depends on ruby 1.9 later.
+- depends on ruby 1.9 later(recommended: 2.0 later).
 
 ## Install and Initialize
 - install houcho from ruby gems
@@ -142,4 +142,6 @@ $ houcho role exec studio3104::www --exclude-hosts studio3104.test
   ```
 
 ## TODO
-- there is no tests…
+- write more tests
+- `Houcho::Logger`
+  - LTSV

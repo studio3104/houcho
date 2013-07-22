@@ -24,7 +24,7 @@ module Houcho
       end
 
       @elements.save_to_file
-      abort("role(#{invalid_roles.join(',')}) does not exist") if ! invalid_roles.size.zero?
+      raise("role(#{invalid_roles.join(',')}) does not exist") if ! invalid_roles.size.zero?
     end
 
 
@@ -41,7 +41,7 @@ module Houcho
       end
 
       @elements.save_to_file
-      abort("role(#{invalid_roles.join(',')}) does not exist") if ! invalid_roles.size.zero?
+      raise("role(#{invalid_roles.join(',')}) does not exist") if ! invalid_roles.size.zero?
     end
 
 

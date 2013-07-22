@@ -4,7 +4,11 @@ module Houcho
       attr_reader :data
 
       def initialize(yaml_file)
-        @data = YAML.load_file(yaml_file)
+        begin
+          @data = YAML.load_file(yaml_file)
+        rescue
+          # I think it should describe the process when current directory has not ready for houcho
+        end
         @data ||= {}
       end
     end

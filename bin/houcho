@@ -54,21 +54,24 @@ class SpecConduct < Thor::MyHelper
   option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
   def attach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    Spec.attach(args, options[:roles])
+    Spec.attach(args, options[:roles]) rescue puts $!.message; exit!
   end
 
   desc 'detach [spec1 spec2 spec3...] --roles [role1 role2...]', 'detach spec from spec'
   option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
   def detach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    Spec.detach(args, options[:roles])
+    Spec.detach(args, options[:roles]) rescue puts $!.message; exit!
   end
 
   desc 'check [options]', 'run the spec sampled appropriately to the associated host'
   option :sample_host_count, :type => :numeric, :default => 5, :desc => 'number of sample hosts'
   def check(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    Spec::Runner.check(args, options[:sample_host_count])
+    messages = Spec::Runner.check(args, options[:sample_host_count]) rescue puts $!.message; exit!
+    messages.each do |msg|
+      puts msg
+    end
   end
 
   desc 'exec (spec1 spec2..) [options]', 'run serverspec manually'
@@ -79,14 +82,18 @@ class SpecConduct < Thor::MyHelper
   def exec(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
 
-    Spec::Runner.exec(
+    messages = Spec::Runner.exec(
       [], [], options[:hosts], args,
       {
         ukigumo: options[:ukigumo],
         ikachan: options[:ikachan],
       },
       options[:dry_run],
-    )
+    ) rescue puts $!.message; exit!
+
+    messages.each do |msg|
+      puts msg
+    end
   end
 end
 
@@ -109,14 +116,14 @@ class HostConduct < Thor::MyHelper
   option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
   def attach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    Host.attach(args, options[:roles])
+    Host.attach(args, options[:roles]) rescue puts $!.message; exit!
   end
 
   desc 'detach [host1 host2 host3...] --roles [role1 role2...]', 'detach host from role'
   option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
   def detach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    Host.detach(args, options[:roles])
+    Host.detach(args, options[:roles]) rescue puts $!.message; exit!
   end
 end
 
@@ -127,18 +134,18 @@ class RoleConduct < Thor::MyHelper
   desc 'create [role1 role2 role3...]', 'cretate role'
   def create(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    Role.create(args)
+    Role.create(args) rescue puts $!.message; exit!
   end
 
   desc 'delete [role1 role2 role3...]', 'delete a role'
   def delete(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    Role.delete(args)
+    Role.delete(args) rescue puts $!.message; exit!
   end
 
   desc 'rename [exist role] [name]', 'rename a role'
   def rename(role, rename)
-    Role.rename(role, rename)
+    Role.rename(role, rename) rescue puts $!.message; exit!
   end
 
   desc 'details [role1 role2...]', 'show details about role'
@@ -160,14 +167,18 @@ class RoleConduct < Thor::MyHelper
   def exec(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
 
-    Spec::Runner.exec(
+    messages = Spec::Runner.exec(
       args, (options[:exclude_hosts]||[]), [], [],
       {
         ukigumo: options[:ukigumo],
         ikachan: options[:ikachan],
       },
       options[:dry_run],
-    )
+    ) rescue puts $!.message; exit!
+
+    messages.each do |msg|
+      puts msg
+    end
   end
 end
 
@@ -190,14 +201,14 @@ class CFConduct < Thor::MyHelper
   option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
   def attach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    CloudForecast::Role.attach(args, options[:roles])
+    CloudForecast::Role.attach(args, options[:roles]) rescue puts $!.message; exit!
   end
 
   desc 'detach [cf1 cf2 cf3...] --roles [role1 role2...]', "detach cloudforecast's role from role"
   option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
   def detach(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    CloudForecast::Role.detach(args, options[:roles])
+    CloudForecast::Role.detach(args, options[:roles]) rescue puts $!.message; exit!
   end
 
   desc 'load', '(re)loading yamls of cloudforecast'
@@ -226,7 +237,7 @@ class Main < Thor
 
   desc 'init', 'set houcho repository on current directory'
   def init
-    Initialize
+    init_repo
   end
 
 end

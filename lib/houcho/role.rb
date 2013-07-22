@@ -15,7 +15,7 @@ module Houcho
 
       if role.size == 0
         @roles.save_to_file
-        abort("role(#{exists.join(',')}) already exist.") if exists.size != 0
+        raise("role(#{exists.join(',')}) already exist.") if exists.size != 0
       else
         self.create(role, exists)
       end
@@ -49,7 +49,7 @@ module Houcho
         e << "detach host from #{errors[:hosts].join(',')} before delete" if ! errors[:hosts].size.zero?
         e << "detach spec from #{errors[:specs].join(',')} before delete" if ! errors[:specs].size.zero?
         e << "detach cloudforecast's role from #{errors[:cf].join(',')} before delete" if ! errors[:cf].size.zero?
-        abort("#{e.join(', ')}.") if ! e.size.zero?
+        raise("#{e.join(', ')}.") if ! e.size.zero?
       else
         self.delete(role, errors)
       end
@@ -58,8 +58,8 @@ module Houcho
 
     def rename(role, name)
       index = self.index(role)
-      abort("#{role} does not exist") if ! index
-      abort("#{name} already exist") if self.index(name)
+      raise("#{role} does not exist") if ! index
+      raise("#{name} already exist") if self.index(name)
 
       @roles.data[index] = name
       @roles.save_to_file

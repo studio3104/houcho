@@ -1,13 +1,11 @@
 # -*- encoding: utf-8 -*-
-require 'awesome_print'
+require 'fileutils'
 require 'rainbow'
-require 'parallel'
 require 'systemu'
 require 'tempfile'
 require 'find'
 require 'yaml'
 require 'json'
-require 'houcho/initialize'
 require 'houcho/yamlhandle'
 require 'houcho/element'
 require 'houcho/role'
@@ -20,6 +18,19 @@ require 'houcho/cloudforecast/host'
 require 'houcho/ci'
 
 module Houcho
+  def init_repo
+    templates = File.expand_path("#{File.dirname(__FILE__)}/../templates")
+
+    %W{conf role spec}.each do |d|
+      FileUtils.cp_r("#{templates}/#{d}", d) if ! Dir.exist?(d)
+    end
+
+    File.symlink('./conf/rspec.conf', './.rspec') if ! File.exists? '.rspec'
+
+    `git init; git add .; git commit -a -m 'initialized houcho repository'` if ! Dir.exist?('.git')
+  end
+
+
   def puts_details(e, indentsize = 0, cnt = 1)
     case e
     when Array

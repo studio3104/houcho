@@ -8,7 +8,7 @@ module Houcho
 
       hosts.each do |host|
         roles = self.indexes(host).map {|index|Role.name(index)}
-        cfroles = CloudForecast::Host.roles(host)
+        cfroles = CloudForecast::Host.new.roles(host)
 
         result[host]         = {}
         result[host]['role'] = roles   if ! roles.empty?

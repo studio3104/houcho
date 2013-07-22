@@ -7,12 +7,13 @@ module Houcho
       def self.details(cfroles)
         result = {}
         cfroles.each do |cfrole|
-          hosts = CloudForecast::Host.hosts(cfrole)
+          hosts = CloudForecast::Host.new.hosts(cfrole)
           if ! hosts.empty?
             result[cfrole] = {}
             result[cfrole]['host'] = hosts
           end
         end
+
         result
       end
 

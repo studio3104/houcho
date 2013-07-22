@@ -25,11 +25,11 @@ module Houcho
         end
       end
       File.open(yaml_file) do |f|
-        i=0
+        i = 0
         YAML.load_documents(f) do |data|
           elements[group[i]] ||= []
           elements[group[i]].concat data['servers']
-          i+=1
+          i += 1
         end
       end
 

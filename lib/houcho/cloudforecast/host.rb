@@ -1,23 +1,25 @@
 module Houcho
-  module CloudForecast::Host
-    @cfdata = YamlHandle::Loader.new('./role/cloudforecast.yaml').data
+  module CloudForecast
+    class Host
+      def initialize
+        @cf = YamlHandle::Loader.new('./role/cloudforecast.yaml')
+      end
 
-    module_function
+      def roles(host)
+        @cf.data.select {|cfrole, cfhosts|cfhosts.include?(host)}.keys
+      end
 
-    def roles(host)
-      @cfdata.select {|cfrole, cfhosts|cfhosts.include?(host)}.keys
-    end
+      def hosts(role)
+        @cf.data[role] || []
+      end
 
-    def hosts(role)
-      @cfdata[role] || []
-    end
+      def details(host)
+        CloudForecast::Role.details(roles(host))
+      end
 
-    def details(host)
-      CloudForecast::Role.details(roles(host))
-    end
-
-    def all
-      @cfdata.values.flatten.uniq
+      def all
+        @cf.data.values.flatten.uniq
+      end
     end
   end
 end

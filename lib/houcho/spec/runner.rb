@@ -26,27 +26,27 @@ module Houcho
       end
 
       m         = {}
-      m['host'] = hosts
-      m['spec'] = spec_check.call(specs)
+      m['host'] = hosts if ! hosts.empty?
+      m['spec'] = spec_check.call(specs) if ! specs.empty?
 
       runlist[:'run manually'] = m if m != {}
 
       if ! spec_not_exist.empty?
-        $houcho_fail = true
-        puts "spec(#{spec_not_exist.join(',')}) file not exist in ./spec directory."
+        raise "spec(#{spec_not_exist.join(',')}) file not exist in ./spec directory."
       end
       runlist
     end
 
 
     def exec(roles, ex_hosts, hosts, specs, ci = {}, dryrun = nil)
+      messages = []
       self.prepare(roles, ex_hosts, hosts, specs).each do |role, v|
         next if v['spec'].empty?
         command = "parallel_rspec #{v['spec'].sort.uniq.join(' ')}"
 
         if dryrun
           v['host'].each do |host| 
-            puts "TARGET_HOST=#{host} #{command}"
+            messages << "TARGET_HOST=#{host} #{command}"
           end
           next
         end
@@ -54,12 +54,13 @@ module Houcho
         v['host'].each do |host|
           ENV['TARGET_HOST'] = host
           result = systemu command
-          puts result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp + "\t#{host}, #{command}\n"
+          messages << result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp + "\t#{host}, #{command}\n"
 
           post_result(result, role, host, command, ci) if ci != {}
           $houcho_fail = true if result[0] != 0
         end
       end
+      messages
     end
 
 
@@ -91,25 +92,33 @@ module Houcho
     end
 
 
-    def check(specs, host_count)
-      specs = specs.flatten
+    def check(specs, host_count, dryrun = false) # dryrun is for test
+      specs    = specs.flatten
+      error    = []
+      messages = []
 
       specs.each do |spec|
         hosts   = []
         indexes = Spec.indexes(spec)
 
         if indexes.empty?
-          puts "#{spec} has not attached to any roles"
+          error << spec
           next
         end
 
         indexes.each do |index|
           hosts += Host.elements(index)
           CloudForecast::Role.elements(index).each do |cfrole|
-            hosts += CloudForecast::Host(cfrole)
+            hosts += CloudForecast::Host.new.hosts(cfrole)
           end
         end
-        hosts.sample(host_count).each {|host| exec([], [], [host], [spec])}
+        hosts.sample(host_count).each {|host| messages += exec([], [], [host], [spec], {}, dryrun)}
+      end
+
+      if error.empty?
+        messages
+      else
+        raise("role(#{error.join(',')}) has not attached to any roles")
       end
     end
   end
