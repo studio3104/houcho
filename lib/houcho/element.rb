@@ -11,6 +11,9 @@ module Houcho
 
 
     def attach(elements, roles)
+      elements = [elements] if elements.class == String
+      roles    = [roles]    if roles.class    == String
+
       invalid_roles = []
       roles.each do |role|
         index = Role.index(role)
@@ -29,6 +32,9 @@ module Houcho
 
 
     def detach(elements, roles)
+      elements = [elements] if elements.class == String
+      roles    = [roles]    if roles.class    == String
+
       invalid_roles = []
       roles.each do |role|
         index = Role.index(role)

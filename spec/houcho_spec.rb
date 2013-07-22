@@ -8,10 +8,10 @@ describe Houcho do
     Dir.chdir(spectmp)
     init_repo
     Role.create(['studio3104', 'studio3105'])
-    Host.attach(['hostA'], ['studio3104'])
+    Host.attach('hostA', 'studio3104')
 
     File.write('spec/specA_spec.rb',' ')
-    Spec.attach(['specA'], ['studio3104'])
+    Spec.attach('specA', 'studio3104')
 
     File.write('./role/cloudforecast/cf.yaml', <<EOD
 --- #houcho
@@ -24,16 +24,16 @@ servers:
 EOD
     )
     CloudForecast.load_yaml
-    CloudForecast::Role.attach(['houcho::rspec::studio3104'], ['studio3104'])
+    CloudForecast::Role.attach('houcho::rspec::studio3104', 'studio3104')
   end
 
 
   describe Role do
     context 'create and delete a role' do
-      it { Role.create(['www']) }
-      it { expect { Role.create(['www']) }.to raise_error }
-      it { Role.delete(['www']) }
-      it { expect { Role.delete(['web']) }.to raise_error }
+      it { Role.create('www') }
+      it { expect { Role.create('www') }.to raise_error }
+      it { Role.delete('www') }
+      it { expect { Role.delete('web') }.to raise_error }
     end
 
     context 'create and delete two roles' do
@@ -51,7 +51,7 @@ EOD
     end
 
     context 'get all roles' do
-      it { Role.all.should eq ['studio3104', 'studio3105'] }
+      it { expect(Role.all).to eq(['studio3104', 'studio3105']) }
     end
 
     context 'get details of a role' do
@@ -77,9 +77,9 @@ EOD
   describe Houcho::Host do
     context 'attach and detach hosts to roles' do
       it { Host.attach(['host1', 'host2'], ['studio3104', 'studio3105']) }
-      it { expect { Host.attach(['host1'], ['invalid_role']) }.to raise_error }
+      it { expect { Host.attach('host1', 'invalid_role') }.to raise_error }
       it { Host.detach(['host1', 'host2'], ['studio3104', 'studio3105']) }
-      it { expect { Host.detach(['host1'], ['invalid_role']) }.to raise_error }
+      it { expect { Host.detach('host1', 'invalid_role') }.to raise_error }
     end
 
     context 'get details of a host' do

@@ -5,6 +5,7 @@ module Houcho
     module_function
 
     def create(role, exists = [])
+      role   = [role] if role.class == String
       target = role.shift
 
       if self.index(target)
@@ -23,6 +24,7 @@ module Houcho
 
 
     def delete(role, errors = {exists:[], hosts:[], specs:[], cf:[]})
+      role   = [role] if role.class == String
       target = role.shift
       index  = self.index(target)
       del    = true
@@ -116,6 +118,11 @@ module Houcho
 
     def name(index)
       @roles.data[index]
+    end
+
+
+    def exist?(role)
+      ! self.index(role).nil?
     end
   end
 end
