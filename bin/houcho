@@ -68,7 +68,14 @@ class SpecConduct < Thor::MyHelper
   option :sample_host_count, :type => :numeric, :default => 5, :desc => 'number of sample hosts'
   def check(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
-    messages = Spec::Runner.check(args, options[:sample_host_count]) rescue puts $!.message; exit!
+
+    begin
+      messages = Spec::Runner.check(args, options[:sample_host_count])
+    rescue
+      puts $!.message
+      exit!
+    end
+
     messages.each do |msg|
       puts msg
     end
@@ -82,14 +89,19 @@ class SpecConduct < Thor::MyHelper
   def exec(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
 
-    messages = Spec::Runner.exec(
-      [], [], options[:hosts], args,
-      {
-        ukigumo: options[:ukigumo],
-        ikachan: options[:ikachan],
-      },
-      options[:dry_run],
-    ) rescue puts $!.message; exit!
+    begin
+      messages = Spec::Runner.exec(
+        [], [], options[:hosts], args,
+        {
+          ukigumo: options[:ukigumo],
+          ikachan: options[:ikachan],
+        },
+        options[:dry_run],
+      )
+    rescue
+      puts $!.message
+      exit!
+    end
 
     messages.each do |msg|
       puts msg
@@ -167,14 +179,19 @@ class RoleConduct < Thor::MyHelper
   def exec(*args)
     Helper.empty_args(self, shell, __method__) if args.empty?
 
-    messages = Spec::Runner.exec(
-      args, (options[:exclude_hosts]||[]), [], [],
-      {
-        ukigumo: options[:ukigumo],
-        ikachan: options[:ikachan],
-      },
-      options[:dry_run],
-    ) rescue puts $!.message; exit!
+    begin
+      messages = Spec::Runner.exec(
+        args, (options[:exclude_hosts]||[]), [], [],
+        {
+          ukigumo: options[:ukigumo],
+          ikachan: options[:ikachan],
+        },
+        options[:dry_run],
+      )
+    rescue
+      puts $!.message
+      exit!
+    end
 
     messages.each do |msg|
       puts msg
