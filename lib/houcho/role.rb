@@ -1,3 +1,8 @@
+require 'houcho/yamlhandle'
+require 'houcho/host'
+require 'houcho/spec'
+require 'houcho/cloudforecast/role'
+
 module Houcho
   module Role
     @roles = YamlHandle::Editor.new('./role/roles.yaml')

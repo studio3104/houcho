@@ -1,3 +1,12 @@
+require 'yaml'
+require 'json'
+require 'houcho/role'
+require 'houcho/host'
+require 'houcho/spec'
+require 'houcho/cloudforecast/role'
+require 'houcho/cloudforecast/host'
+require 'houcho/ci'
+
 module Houcho
   module Spec::Runner
     module_function
@@ -6,16 +15,13 @@ module Houcho
       runlist        = {}
       spec_not_exist = []
 
-      spec_check = Proc.new do |specs|
-        p = specs.map {|spec|'spec/' + spec + '_spec.rb'}.partition {|spes|File.exist?(spes)}
-        spec_not_exist += p[1].map {|e|e.sub(/^spec\//,'').sub(/_spec.rb$/,'')}
-        p[0]
-      end
-
       Role.details(roles).each do |role, detail|
         r         = {}
-        r['spec'] = spec_check.call(detail['spec']||[])
+        partspec  = Spec.partition(detail['spec']||[])
+        r['spec'] = partspec[0]
         r['host'] = detail['host']||[]
+
+        spec_not_exist += partspec[1]
 
         (detail['cf']||{}).each do |cfrole, value|
           r['host'] += value['host']
@@ -26,8 +32,11 @@ module Houcho
       end
 
       m         = {}
+      partspec  = Spec.partition(specs)
+      m['spec'] = partspec[0] if ! partspec[0].empty?
       m['host'] = hosts if ! hosts.empty?
-      m['spec'] = spec_check.call(specs) if ! specs.empty?
+
+      spec_not_exist += partspec[1]
 
       runlist[:'run manually'] = m if m != {}
 

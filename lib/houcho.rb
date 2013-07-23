@@ -1,23 +1,10 @@
 # -*- encoding: utf-8 -*-
 require 'fileutils'
 require 'rainbow'
-require 'systemu'
-require 'tempfile'
-require 'find'
-require 'yaml'
-require 'json'
-require 'houcho/yamlhandle'
-require 'houcho/element'
-require 'houcho/role'
-require 'houcho/host'
-require 'houcho/spec'
-require 'houcho/spec/runner'
-require 'houcho/cloudforecast'
-require 'houcho/cloudforecast/role'
-require 'houcho/cloudforecast/host'
-require 'houcho/ci'
 
 module Houcho
+  module_function
+
   def init_repo
     templates = File.expand_path("#{File.dirname(__FILE__)}/../templates")
 

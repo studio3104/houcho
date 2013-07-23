@@ -1,8 +1,12 @@
+require 'tempfile'
+require 'find'
+require 'yaml'
+
 module Houcho
   module CloudForecast
     module_function
 
-    def load_yaml
+    def load
       yaml_file = Tempfile.new('yaml')
       File.open(yaml_file,'a') do |t|
         Find.find('./role/cloudforecast') do |f|

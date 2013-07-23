@@ -1,7 +1,23 @@
-require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+#require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+require 'rspec'
+require 'houcho'
+require 'houcho/role'
+require 'houcho/host'
+require 'houcho/spec'
+require 'houcho/spec/runner'
+require 'houcho/yamlhandle'
+require 'houcho/element'
+require 'houcho/cloudforecast'
+require 'houcho/cloudforecast/role'
+require 'houcho/cloudforecast/host'
+require 'houcho/ci'
+require 'tmpdir'
+require 'tempfile'
+require 'fileutils'
+
+include Houcho
 
 spectmp = Dir.mktmpdir('spec')
-include Houcho
 
 describe Houcho do
   before :all do
@@ -23,15 +39,15 @@ servers:
       - test2.studio3104.com
 EOD
     )
-    CloudForecast.load_yaml
+    CloudForecast.load
     CloudForecast::Role.attach('houcho::rspec::studio3104', 'studio3104')
   end
 
 
-  describe Role do
+  describe Houcho::Role do
     context 'create and delete a role' do
       it { Role.create('www') }
-      it { expect { Role.create('www') }.to raise_error }
+      it { expect { Houcho::Role.create('www') }.to raise_error }
       it { Role.delete('www') }
       it { expect { Role.delete('web') }.to raise_error }
     end
@@ -114,6 +130,11 @@ EOD
         end
       end
     end
+  end
+
+
+  describe Houcho::Spec do
+
   end
 
 

@@ -1,3 +1,7 @@
+require 'houcho/yamlhandle'
+require 'houcho/element'
+require 'houcho/cloudforecast/host'
+
 module Houcho
   module CloudForecast
     class Role

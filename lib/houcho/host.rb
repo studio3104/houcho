@@ -1,3 +1,8 @@
+require 'houcho/yamlhandle'
+require 'houcho/element'
+require 'houcho/role'
+require 'houcho/cloudforecast/host'
+
 module Houcho
   class Host
     @elements = YamlHandle::Editor.new('./role/hosts.yaml')

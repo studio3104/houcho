@@ -1,3 +1,5 @@
+require 'houcho/role'
+
 module Houcho
   module Element
 

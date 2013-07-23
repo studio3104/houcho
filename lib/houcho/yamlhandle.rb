@@ -1,3 +1,5 @@
+require 'yaml'
+
 module Houcho
   module YamlHandle
     class Loader
