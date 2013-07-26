@@ -49,14 +49,14 @@ module Houcho
 
       @roles.data.delete(index) if del
 
-      if role.size.zero?
+      if role.size == 0
         @roles.save_to_file
         e =  []
-        e << "role(#{errors[:exists].join(',')}) does not exist" if ! errors[:exists].size.zero?
-        e << "detach host from #{errors[:hosts].join(',')} before delete" if ! errors[:hosts].size.zero?
-        e << "detach spec from #{errors[:specs].join(',')} before delete" if ! errors[:specs].size.zero?
-        e << "detach cloudforecast's role from #{errors[:cf].join(',')} before delete" if ! errors[:cf].size.zero?
-        raise("#{e.join(', ')}.") if ! e.size.zero?
+        e << "role(#{errors[:exists].join(',')}) does not exist" if errors[:exists].size != 0
+        e << "detach host from #{errors[:hosts].join(',')} before delete" if errors[:hosts].size != 0
+        e << "detach spec from #{errors[:specs].join(',')} before delete" if errors[:specs].size != 0
+        e << "detach cloudforecast's role from #{errors[:cf].join(',')} before delete" if errors[:cf].size != 0
+        raise("#{e.join(', ')}.") if e.size != 0
       else
         self.delete(role, errors)
       end
@@ -86,7 +86,7 @@ module Houcho
         if self.index(role)
           role
         else
-          self.indexes_regexp(Regexp.new(role)).map {|index|self.name(index)}
+          self.indexes_regexp(Regexp.new(role)).map { |index| self.name(index) }
         end
       end.flatten.sort.uniq
 
@@ -117,7 +117,7 @@ module Houcho
 
 
     def indexes_regexp(role)
-      @roles.data.select {|index, rolename| rolename =~ role }.keys
+      @roles.data.select { |index, rolename| rolename =~ role }.keys
     end
 
 

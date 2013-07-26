@@ -1,3 +1,5 @@
+# -*- encoding: utf-8 -*-
+
 require 'houcho/role'
 
 module Houcho
@@ -29,7 +31,7 @@ module Houcho
       end
 
       @elements.save_to_file
-      raise("role(#{invalid_roles.join(',')}) does not exist") if ! invalid_roles.size.zero?
+      raise("role(#{invalid_roles.join(',')}) does not exist") if invalid_roles.size != 0
     end
 
 
@@ -45,11 +47,11 @@ module Houcho
           next
         end
 
-        @elements.data[index] -= elements
+        @elements.data[index].delete(elements)
       end
 
       @elements.save_to_file
-      raise("role(#{invalid_roles.join(',')}) does not exist") if ! invalid_roles.size.zero?
+      raise("role(#{invalid_roles.join(',')}) does not exist") if invalid_roles.size != 0
     end
 
 
@@ -67,14 +69,14 @@ module Houcho
 
     def indexes(element)
       return [] if ! @elements.data.values.flatten.include?(element)
-      @elements.data.select {|index, elems|elems.include?(element)}.keys
+      @elements.data.select { |index, elems| elems.include?(element) }.keys
     end
 
 
     def details(elements)
       result = {}
       elements.each do |element|
-        result[element] = { 'role' => self.indexes(element).map {|index|Role.name(index)} }
+        result[element] = { 'role' => self.indexes(element).map { |index| Role.name(index) } }
       end
       result
     end

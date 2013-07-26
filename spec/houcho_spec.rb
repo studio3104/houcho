@@ -1,6 +1,9 @@
 #require File.expand_path(File.dirname(__FILE__) + '/spec_helper')
+$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
+
 require 'rspec'
 require 'houcho'
+require 'houcho/repository'
 require 'houcho/role'
 require 'houcho/host'
 require 'houcho/spec'
@@ -15,19 +18,17 @@ require 'tmpdir'
 require 'tempfile'
 require 'fileutils'
 
-include Houcho
-
 spectmp = Dir.mktmpdir('spec')
 
 describe Houcho do
   before :all do
     Dir.chdir(spectmp)
-    init_repo
-    Role.create(['studio3104', 'studio3105'])
-    Host.attach('hostA', 'studio3104')
+    Houcho::Repository.init
+    Houcho::Role.create(['studio3104', 'studio3105'])
+    Houcho::Host.attach('hostA', 'studio3104')
 
     File.write('spec/specA_spec.rb',' ')
-    Spec.attach('specA', 'studio3104')
+    Houcho::Spec.attach('specA', 'studio3104')
 
     File.write('./role/cloudforecast/cf.yaml', <<EOD
 --- #houcho
@@ -39,40 +40,40 @@ servers:
       - test2.studio3104.com
 EOD
     )
-    CloudForecast.load
-    CloudForecast::Role.attach('houcho::rspec::studio3104', 'studio3104')
+    Houcho::CloudForecast.load
+    Houcho::CloudForecast::Role.attach('houcho::rspec::studio3104', 'studio3104')
   end
 
 
   describe Houcho::Role do
     context 'create and delete a role' do
-      it { Role.create('www') }
+      it { Houcho::Role.create('www') }
       it { expect { Houcho::Role.create('www') }.to raise_error }
-      it { Role.delete('www') }
-      it { expect { Role.delete('web') }.to raise_error }
+      it { Houcho::Role.delete('www') }
+      it { expect { Houcho::Role.delete('web') }.to raise_error }
     end
 
     context 'create and delete two roles' do
-      it { Role.create(['studio3104::www', 'studio3104::database']) }
-      it { expect { Role.create(['studio3104::www', 'studio3104::database']) }.to raise_error }
-      it { Role.delete(['studio3104::www', 'studio3104::database']) }
-      it { expect { Role.delete(['studio3104::www', 'studio3104::database']) }.to raise_error }
+      it { Houcho::Role.create(['studio3104::www', 'studio3104::database']) }
+      it { expect { Houcho::Role.create(['studio3104::www', 'studio3104::database']) }.to raise_error }
+      it { Houcho::Role.delete(['studio3104::www', 'studio3104::database']) }
+      it { expect { Houcho::Role.delete(['studio3104::www', 'studio3104::database']) }.to raise_error }
     end
 
     context 'rename a role' do
-      it { Role.rename('studio3105', 'studio3106') }
-      it { expect { Role.rename('invalid_role', 'studio3106') }.to raise_error }
-      it { expect { Role.rename('studio3106', 'studio3104') }.to raise_error }
-      it { Role.rename('studio3106', 'studio3105') }
+      it { Houcho::Role.rename('studio3105', 'studio3106') }
+      it { expect { Houcho::Role.rename('invalid_role', 'studio3106') }.to raise_error }
+      it { expect { Houcho::Role.rename('studio3106', 'studio3104') }.to raise_error }
+      it { Houcho::Role.rename('studio3106', 'studio3105') }
     end
 
     context 'get all roles' do
-      it { expect(Role.all).to eq(['studio3104', 'studio3105']) }
+      it { expect(Houcho::Role.all).to eq(['studio3104', 'studio3105']) }
     end
 
     context 'get details of a role' do
       it do
-        expect(Role.details(['studio3104'])).to eq(
+        expect(Houcho::Role.details(['studio3104'])).to eq(
           {
             'studio3104' => {
               'host' => [ 'hostA' ],
@@ -84,35 +85,35 @@ EOD
       end
     end
 
-    it { expect(Role.index('studio3104')).to be(1)}
-    it { expect(Role.indexes_regexp(/studio310\d/)).to eq([1,2])}
-    it { expect(Role.name(1)).to eq('studio3104')}
+    it { expect(Houcho::Role.index('studio3104')).to be(1)}
+    it { expect(Houcho::Role.indexes_regexp(/studio310\d/)).to eq([1,2])}
+    it { expect(Houcho::Role.name(1)).to eq('studio3104')}
   end
 
 
   describe Houcho::Host do
     context 'attach and detach hosts to roles' do
-      it { Host.attach(['host1', 'host2'], ['studio3104', 'studio3105']) }
-      it { expect { Host.attach('host1', 'invalid_role') }.to raise_error }
-      it { Host.detach(['host1', 'host2'], ['studio3104', 'studio3105']) }
-      it { expect { Host.detach('host1', 'invalid_role') }.to raise_error }
+      it { Houcho::Host.attach(['host1', 'host2'], ['studio3104', 'studio3105']) }
+      it { expect { Houcho::Host.attach('host1', 'invalid_role') }.to raise_error }
+      it { Houcho::Host.detach(['host1', 'host2'], ['studio3104', 'studio3105']) }
+      it { expect { Houcho::Host.detach('host1', 'invalid_role') }.to raise_error }
     end
 
     context 'get details of a host' do
       it 'host from original defined' do
-        expect(Host.details(['hostA'])).to eq(
+        expect(Houcho::Host.details(['hostA'])).to eq(
           { 'hostA' => { 'role' => [ 'studio3104' ] } }
         )
       end
 
       it 'host from cf defined' do
-        expect(Host.details(['test1.studio3104.com'])).to eq(
+        expect(Houcho::Host.details(['test1.studio3104.com'])).to eq(
           { 'test1.studio3104.com' => { 'cf' => [ 'houcho::rspec::studio3104' ] } }
         )
       end
 
       it 'both' do
-        expect(Host.details(['hostA', 'test1.studio3104.com'])).to eq(
+        expect(Houcho::Host.details(['hostA', 'test1.studio3104.com'])).to eq(
           {
             'hostA'                => { 'role' => [ 'studio3104' ] },
             'test1.studio3104.com' => { 'cf'   => [ 'houcho::rspec::studio3104' ] },
@@ -122,11 +123,11 @@ EOD
 
       context 'get host list attached or defined cf' do
         it 'all of hosts' do
-          expect(Host.elements).to eq(["hostA"])
+          expect(Houcho::Host.elements).to eq(["hostA"])
         end
 
         it 'hosts of one of role' do
-          expect(Host.elements(1)).to eq(["hostA"])
+          expect(Houcho::Host.elements(1)).to eq(["hostA"])
         end
       end
     end
@@ -141,7 +142,7 @@ EOD
   describe Houcho::Spec::Runner do
     context 'run role' do
       it do
-        expect(Spec::Runner.exec(['studio3104'],[],[],[],{},true)).to eq([
+        expect(Houcho::Spec::Runner.exec(['studio3104'],[],[],[],{},true)).to eq([
           'TARGET_HOST=hostA parallel_rspec spec/specA_spec.rb',
           'TARGET_HOST=test1.studio3104.com parallel_rspec spec/specA_spec.rb',
           'TARGET_HOST=test2.studio3104.com parallel_rspec spec/specA_spec.rb'
@@ -149,7 +150,7 @@ EOD
       end
 
       it 'with exclude host' do
-        expect(Spec::Runner.exec(['studio3104'],['test1.studio3104.com'],[],[],{},true)).to eq([
+        expect(Houcho::Spec::Runner.exec(['studio3104'],['test1.studio3104.com'],[],[],{},true)).to eq([
           'TARGET_HOST=hostA parallel_rspec spec/specA_spec.rb',
           'TARGET_HOST=test2.studio3104.com parallel_rspec spec/specA_spec.rb'
         ])
@@ -158,21 +159,21 @@ EOD
 
     context 'run manually' do
       it do
-        expect(Spec::Runner.exec([],[],['test3.studio3104.com', 'test4.studio3104.com'],['specA'],{},true)).to eq([
+        expect(Houcho::Spec::Runner.exec([],[],['test3.studio3104.com', 'test4.studio3104.com'],['specA'],{},true)).to eq([
           'TARGET_HOST=test3.studio3104.com parallel_rspec spec/specA_spec.rb',
           'TARGET_HOST=test4.studio3104.com parallel_rspec spec/specA_spec.rb'
         ])
       end
 
       it 'case of spec not exist' do
-        expect { Spec::Runner.exec([],[],['test5.studio3104.com'],['specA', 'specX'],{},true) }.to raise_error
+        expect { Houcho::Spec::Runner.exec([],[],['test5.studio3104.com'],['specA', 'specX'],{},true) }.to raise_error
       end
     end
 
     context 'check spec' do
-      it { expect(Spec::Runner.check(['specA'], 2, true).size).to be(2) }
+      it { expect(Houcho::Spec::Runner.check(['specA'], 2, true).size).to be(2) }
       it 'case of spec not exist' do
-        expect { Spec::Runner.check(['specX'], 2, true) }.to raise_error
+        expect { Houcho::Spec::Runner.check(['specX'], 2, true) }.to raise_error
       end
     end
   end

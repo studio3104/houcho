@@ -12,21 +12,21 @@ module Houcho
     module_function
 
     def prepare(roles, ex_hosts, hosts, specs)
-      runlist        = {}
+      runlist = {}
       spec_not_exist = []
 
       Role.details(roles).each do |role, detail|
-        r         = {}
+        r = {}
         partspec  = Spec.partition(detail['spec']||[])
         r['spec'] = partspec[0]
         r['host'] = detail['host']||[]
 
         spec_not_exist += partspec[1]
 
-        (detail['cf']||{}).each do |cfrole, value|
+        (detail['cf'] || {}).each do |cfrole, value|
           r['host'] += value['host']
         end
-        r['host'] -= ex_hosts
+        r['host'].delete(ex_hosts)
 
         runlist[role] = r
       end
@@ -38,7 +38,7 @@ module Houcho
 
       spec_not_exist += partspec[1]
 
-      runlist[:'run manually'] = m if m != {}
+      runlist[:'run manually'] = m unless m.empty?
 
       if ! spec_not_exist.empty?
         raise "spec(#{spec_not_exist.join(',')}) file not exist in ./spec directory."
@@ -65,8 +65,7 @@ module Houcho
           result = systemu command
           messages << result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp + "\t#{host}, #{command}\n"
 
-          post_result(result, role, host, command, ci) if ci != {}
-          $houcho_fail = true if result[0] != 0
+          post_result(result, role, host, command, ci) unless ci.empty?
         end
       end
       messages
@@ -92,11 +91,12 @@ module Houcho
       if ci[:ikachan] && result_status != 1
         message  = "[serverspec fail]\`TARGET_HOST=#{host} #{command}\` "
         message += JSON.parse(ukigumo_report)['report']['url'] if ukigumo_report
-        CI::IkachanClient.new(
+        ikachan = CI::IkachanClient.new(
           conf['ikachan']['channel'],
           conf['ikachan']['host'],
           conf['ikachan']['port']
-        ).post(message)
+        )
+        ikachan.post(message)
       end
     end
 
@@ -121,13 +121,13 @@ module Houcho
             hosts += CloudForecast::Host.new.hosts(cfrole)
           end
         end
-        hosts.sample(host_count).each {|host| messages += exec([], [], [host], [spec], {}, dryrun)}
+        hosts.sample(host_count).each { |host| messages += exec([], [], [host], [spec], {}, dryrun) }
       end
 
       if error.empty?
         messages
       else
-        raise("role(#{error.join(',')}) has not attached to any roles")
+        raise "role(#{error.join(',')}) has not attached to any roles"
       end
     end
   end

@@ -8,10 +8,10 @@ module Houcho
     extend Element
 
     def self.partition(specs)
-      free_path  = specs.partition {|spec|File.exist?(spec)}
-      under_repo = free_path[1].map {|spec|'spec/' + spec + '_spec.rb'}.partition {|spes|File.exist?(spes)}
+      free_path  = specs.partition { |spec| File.exist?(spec) }
+      under_repo = free_path[1].map { |spec| 'spec/' + spec + '_spec.rb' }.partition { |spes| File.exist?(spes) }
 
-      [free_path[0] + under_repo[0], under_repo[1].map {|e|e.sub(/^spec\//,'').sub(/_spec.rb$/,'')}]
+      [free_path[0] + under_repo[0], under_repo[1].map { |e|e.sub(/^spec\//,'').sub(/_spec.rb$/,'') }]
     end
 
     def self.attach(specs, roles)
@@ -31,7 +31,7 @@ module Houcho
       end
 
       @elements.save_to_file
-      raise("role(#{invalid_roles.join(',')}) does not exist") if ! invalid_roles.size.zero?
+      raise("role(#{invalid_roles.join(',')}) does not exist") if invalid_roles.size != 0
     end
   end
 end
