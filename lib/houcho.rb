@@ -1,8 +1,10 @@
-# -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
-
-require 'fileutils'
-require 'rainbow'
+require "houcho/config"
 
 module Houcho
+  [
+    Houcho::Config::APPROOT,
+    Houcho::Config::SPECDIR
+  ].each do |d|
+    Dir.mkdir(d) unless Dir.exist?(d)
+  end
 end

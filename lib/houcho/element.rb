@@ -1,84 +1,98 @@
 # -*- encoding: utf-8 -*-
+$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
 
 require 'houcho/role'
+require "houcho/database"
 
 module Houcho
-  module Element
+  class RoleExistenceException < Exception; end
 
-    def elements(index = nil)
-      if index
-        (@elements.data[index]||[]).uniq
-      else
-        @elements.data.values.flatten.uniq
+  class Element
+    def initialize(table)
+      @db = Houcho::DB.new
+      @role = Houcho::Role.new
+      @table = table
+    end
+
+
+    def list(id = nil)
+      sql = "SELECT name FROM #{@table}"
+      sql += " WHERE role_id = #{id}" if id
+
+      @db.handle.execute(sql)
+    end
+
+
+    def details(elements)
+      # とんでもないメソッドチェーンになってるので直す
+      result = {}
+      elements.each do |element|
+        result[element] = {
+          'role' =>
+          @db.handle.execute("SELECT role_id FROM #{@table} WHERE name = '#{element}'").flatten.map do |id|
+            @db.handle.execute("SELECT name FROM role WHERE id = '#{id}'")
+          end.flatten
+        }
       end
+      result
+    end
+
+
+    def attached?(element, id = nil)
+      sql = "SELECT * FROM #{@table} WHERE name = '#{element}'"
+      sql += " AND role_id = #{id}" if id
+
+      !@db.handle.execute(sql).empty?
     end
 
 
     def attach(elements, roles)
-      elements = [elements] if elements.class == String
-      roles    = [roles]    if roles.class    == String
+      elements = [elements] unless elements.is_a?(Array)
+      roles = [roles] unless roles.is_a?(Array)
 
-      invalid_roles = []
       roles.each do |role|
-        index = Role.index(role)
-        if ! index
-          invalid_roles << role
-          next
+        id = @role.id(role).flatten.first
+        raise RoleExistenceException, "Role has not been defined. - #{role}" if id.nil?
+
+        @db.handle.transaction do
+          elements.each do |element|
+            # id と element で UNIQUE 制約してるけど、それの違反は無視して next でいいかな、と思いました。
+            begin
+              @db.handle.execute("INSERT INTO #{@table} VALUES(#{id}, '#{element}')")
+            rescue SQLite3::ConstraintException
+              next
+            end
+          end
         end
-
-        @elements.data[index] ||= []
-        @elements.data[index] = (@elements.data[index] + elements).sort.uniq
       end
-
-      @elements.save_to_file
-      raise("role(#{invalid_roles.join(',')}) does not exist") if invalid_roles.size != 0
     end
 
 
     def detach(elements, roles)
-      elements = [elements] if elements.class == String
-      roles    = [roles]    if roles.class    == String
+      elements = [elements] unless elements.is_a?(Array)
+      roles = [roles] unless roles.is_a?(Array)
 
-      invalid_roles = []
       roles.each do |role|
-        index = Role.index(role)
-        if ! index
-          invalid_roles << role
-          next
+        id = @role.id(role).flatten.first
+        raise RoleExistenceException, "Role has not been defined. - #{role}" if id.nil?
+
+        @db.handle.transaction do
+          elements.each do |element|
+            # DELETE 対象が存在しなかったときにエラるようにすべきか？
+            @db.handle.execute("DELETE FROM #{@table} WHERE role_id = #{id} AND name = '#{element}'")
+          end
         end
-
-        @elements.data[index].delete(elements)
       end
-
-      @elements.save_to_file
-      raise("role(#{invalid_roles.join(',')}) does not exist") if invalid_roles.size != 0
     end
+  end
+end
 
-
-    def attached?(index, element)
-      return false if ! @elements.data.has_key?(index)
-      @elements.data[index].include?(element)
-    end
-
-
-    def has_data?(index)
-      return false if ! @elements.data.has_key?(index)
-      @elements.data[index].size != 0
-    end
-
-
+__END__
     def indexes(element)
       return [] if ! @elements.data.values.flatten.include?(element)
       @elements.data.select { |index, elems| elems.include?(element) }.keys
     end
 
 
-    def details(elements)
-      result = {}
-      elements.each do |element|
-        result[element] = { 'role' => self.indexes(element).map { |index| Role.name(index) } }
-      end
-      result
-    end
   end
 end

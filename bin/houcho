@@ -1,4 +1,4 @@
 #!/usr/bin/env ruby
-$LOAD_PATH.unshift File.join(File.dirname(__FILE__), *%w[.. lib])
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 require 'houcho/cli'
-Houcho::CLI.start
+Houcho::CLI::Main.start

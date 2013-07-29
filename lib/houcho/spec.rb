@@ -1,37 +1,56 @@
-require 'houcho/yamlhandle'
-require 'houcho/role'
-require 'houcho/element'
+# -*- encoding: utf-8 -*-
+$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
+require "houcho"
+require "houcho/role"
+require "houcho/element"
+require "houcho/config"
 
 module Houcho
-  class Spec
-    @elements = YamlHandle::Editor.new('./role/specs.yaml')
-    extend Element
+  class SpecFileException < Exception; end
 
-    def self.partition(specs)
-      free_path  = specs.partition { |spec| File.exist?(spec) }
-      under_repo = free_path[1].map { |spec| 'spec/' + spec + '_spec.rb' }.partition { |spes| File.exist?(spes) }
-
-      [free_path[0] + under_repo[0], under_repo[1].map { |e|e.sub(/^spec\//,'').sub(/_spec.rb$/,'') }]
+  class Spec < Element
+    def initialize
+      super("serverspec")
+      @specdir = Houcho::Config::SPECDIR
     end
 
-    def self.attach(specs, roles)
-      specs = [specs] if specs.class == String
-      roles = [roles] if roles.class == String
 
-      invalid_roles = []
-      roles.each do |role|
-        index = Role.index(role)
-        if ! index
-          invalid_roles << role
-          next
+    def attach(specs, roles)
+      free_path = specs.partition { |spec| File.exist?(spec) }
+      under_repo = free_path[1].partition { |spec| File.exist?("#{@specdir}/#{spec}_spec.rb") }
+
+      nofiles = free_path[1] + under_repo[1] - under_repo[0]
+      raise SpecFileException, "No such spec file - #{nofiles.join(",")}" unless nofiles.empty?
+
+      free_path[0].each do |spec|
+        if File.exist?("#{@specdir}/#{spec.sub(/.+\/(.+)$/, '\1')}")
+          raise SpecFileException, "Spec file of same name already exists in houcho spec directory - #{spec}"
         end
-
-        @elements.data[index] ||= []
-        @elements.data[index] = (@elements.data[index] + specs).sort.uniq
       end
 
-      @elements.save_to_file
-      raise("role(#{invalid_roles.join(',')}) does not exist") if invalid_roles.size != 0
+      FileUtils.cp(free_path[0], @specdir)
+      files = under_repo[0] + free_path[0].map { |s| s.sub(/.+\/(.+)\_spec\.rb$/, '\1') }
+      super(files, roles)
+    end
+
+
+    def delete_file(specs)
+      specs.each do |spec|
+        raise SpecFileException, "Spec file has been attached to role. - #{spec}" if attached?(spec)
+        File.delete("#{@specdir}/#{spec}_spec.rb")
+      end
+    end
+
+
+    def delete_file!(specs)
+      specs.each do |spec|
+        begin
+          delete([spec])
+        rescue SpecFileException
+          @db.handle.execute("DELETE FROM #{@table} WHERE name = '#{spec}'")
+          retry
+        end
+      end
     end
   end
 end
