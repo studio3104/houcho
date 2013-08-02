@@ -4,30 +4,34 @@ $LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
 require "houcho/database"
 
 module Houcho
+  class RoleExistenceException < Exception; end
+
   class Role
     def initialize
-      @db = Houcho::DB.new
+      @db = Houcho::DB.new.handle
     end
 
 
     def id(role)
-      @db.handle.execute("SELECT id FROM role WHERE name = '#{role}'")
+      @db.execute("SELECT id FROM role WHERE name = '#{role}'").flatten.first
     end
 
 
     def exist?(role)
-      # 存在しないroleを削除しようとしたりしてもエラんないから、コイツを使ってエラるように実装しようかな、と。
-      # 対象は delete と rename
-      !id.empty?
+      !id(role).nil?
     end
 
 
     def create(role)
       role = [role] unless role.is_a?(Array)
 
-      @db.handle.transaction do
+      @db.transaction do
         role.each do |r|
-          @db.handle.execute("INSERT INTO role(name) VALUES('#{r}')")
+          begin
+            @db.execute("INSERT INTO role(name) VALUES('#{r}')")
+          rescue SQLite3::ConstraintException, "column name is not unique"
+            raise RoleExistenceException, "role already exist - #{r}"
+          end
         end
       end
     end
@@ -36,19 +40,25 @@ module Houcho
     def delete(role)
       role = [role] unless role.is_a?(Array)
 
-      @db.handle.transaction do
+      @db.transaction do
         role.each do |r|
-          @db.handle.execute("DELETE FROM role WHERE name = '#{r}'")
+          raise RoleExistenceException, "role does not exist - #{r}" unless exist?(r)
+          @db.execute("DELETE FROM role WHERE name = '#{r}'")
         end
       end
     end
 
 
     def rename(exist_role, name)
-      @db.handle.execute("UPDATE role SET name = '#{name}' WHERE name = '#{exist_role}'")
+      raise RoleExistenceException, "role does not exist - #{exist_role}" unless exist?(exist_role)
+      raise RoleExistenceException, "role already exist - #{name}" if exist?(name)
+      @db.execute("UPDATE role SET name = '#{name}' WHERE name = '#{exist_role}'")
     end
 
 
+    def list
+      @db.execute("SELECT name FROM role").flatten
+    end
   end
 end
 

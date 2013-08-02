@@ -5,21 +5,24 @@ require 'houcho/role'
 require "houcho/database"
 
 module Houcho
-  class RoleExistenceException < Exception; end
-
   class Element
-    def initialize(table)
-      @db = Houcho::DB.new
+    def initialize(type)
+      @db = Houcho::DB.new.handle
       @role = Houcho::Role.new
-      @table = table
+      @type = type
     end
 
 
-    def list(id = nil)
-      sql = "SELECT name FROM #{@table}"
-      sql += " WHERE role_id = #{id}" if id
+    def id(name)
+      @db.execute("SELECT id FROM #{@type} WHERE name = '#{name}'").flatten.first
+    end
 
-      @db.handle.execute(sql)
+
+    def list(role_id = nil)
+      sql = "SELECT T1.name FROM #{@type} T1"
+      sql += " JOIN role_#{@type} T2 ON T1.id = T2.#{@type}_id HAVING T2.role_id = #{role_id}" if role_id
+
+      @db.execute(sql).flatten
     end
 
 
@@ -29,8 +32,8 @@ module Houcho
       elements.each do |element|
         result[element] = {
           'role' =>
-          @db.handle.execute("SELECT role_id FROM #{@table} WHERE name = '#{element}'").flatten.map do |id|
-            @db.handle.execute("SELECT name FROM role WHERE id = '#{id}'")
+          @db.execute("SELECT role_id FROM role_#{@type} WHERE name = ?", element).flatten.map do |id|
+            @db.execute("SELECT name FROM role WHERE id = ?", id)
           end.flatten
         }
       end
@@ -39,10 +42,10 @@ module Houcho
 
 
     def attached?(element, id = nil)
-      sql = "SELECT * FROM #{@table} WHERE name = '#{element}'"
+      sql = "SELECT * FROM #{@type} WHERE name = '#{element}'"
       sql += " AND role_id = #{id}" if id
 
-      !@db.handle.execute(sql).empty?
+      !@db.execute(sql).empty?
     end
 
 
@@ -51,19 +54,22 @@ module Houcho
       roles = [roles] unless roles.is_a?(Array)
 
       roles.each do |role|
-        id = @role.id(role).flatten.first
-        raise RoleExistenceException, "Role has not been defined. - #{role}" if id.nil?
+        role_id = @role.id(role)
+        raise RoleExistenceException, "role does not exist - #{role}" unless role_id
 
-        @db.handle.transaction do
-          elements.each do |element|
-            # id と element で UNIQUE 制約してるけど、それの違反は無視して next でいいかな、と思いました。
-            begin
-              @db.handle.execute("INSERT INTO #{@table} VALUES(#{id}, '#{element}')")
-            rescue SQLite3::ConstraintException
-              next
-            end
+        @db.transaction
+
+        elements.each do |element|
+          @db.execute("INSERT INTO #{@type}(name) VALUES(?)", element) unless id(element)
+
+          begin
+            @db.execute("INSERT INTO role_#{@type} VALUES(?,?)", role_id, id(element))
+          rescue SQLite3::ConstraintException
+            next
           end
         end
+
+        @db.commit
       end
     end
 
@@ -73,15 +79,26 @@ module Houcho
       roles = [roles] unless roles.is_a?(Array)
 
       roles.each do |role|
-        id = @role.id(role).flatten.first
-        raise RoleExistenceException, "Role has not been defined. - #{role}" if id.nil?
+        role_id = @role.id(role)
+        raise RoleExistenceException, "role does not exist - #{role}" if role_id.nil?
 
-        @db.handle.transaction do
-          elements.each do |element|
-            # DELETE 対象が存在しなかったときにエラるようにすべきか？
-            @db.handle.execute("DELETE FROM #{@table} WHERE role_id = #{id} AND name = '#{element}'")
+        @db.transaction
+
+        elements.each do |element|
+          @db.execute(
+            "DELETE FROM role_#{@type} WHERE role_id = ? AND #{@type}_id = ?",
+            role_id,
+            element
+          )
+
+          begin
+            @db.execute("DELETE FROM #{@type} WHERE name = ?", element)
+          rescue SQLite3::ConstraintException, "foreign key constraint failed"
+            next
           end
         end
+
+        @db.commit
       end
     end
   end
