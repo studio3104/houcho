@@ -1,10 +1,6 @@
-# -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
-
 require 'thor'
 require 'houcho/spec'
-#require 'houcho/spec/runner'
-#require 'houcho/console'
+require 'houcho/spec/runner'
 
 module Houcho
   module CLI
@@ -55,8 +51,7 @@ module Houcho
 
       desc 'details [spec1 spec2 spec3...]', 'show details about spec'
       def details(*args)
-        p @@s.details(args)
-        #Houcho::Console.puts_details(Houcho::Spec.details(args))
+        Houcho::CLI::Main.puts_details(@@s.details(args))
       end
     end
   end

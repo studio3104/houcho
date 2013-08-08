@@ -1,7 +1,7 @@
-# -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
-
 require "houcho/database"
+require "houcho/host"
+require "houcho/spec"
+require "houcho/outerrole"
 
 module Houcho
   class RoleExistenceException < Exception; end
@@ -13,7 +13,18 @@ module Houcho
 
 
     def id(role)
-      @db.execute("SELECT id FROM role WHERE name = '#{role}'").flatten.first
+      if role.is_a?(Regexp)
+        @db.execute("SELECT id, name FROM role").map do |record|
+          record[0] if record[1] =~ role
+        end
+      else
+        @db.execute("SELECT id FROM role WHERE name = ?", role).flatten.first
+      end
+    end
+
+
+    def name(id)
+      @db.execute("SELECT name FROM role WHERE id = ?", id).flatten.first
     end
 
 
@@ -28,7 +39,7 @@ module Houcho
       @db.transaction do
         role.each do |r|
           begin
-            @db.execute("INSERT INTO role(name) VALUES('#{r}')")
+            @db.execute("INSERT INTO role(name) VALUES(?)", r)
           rescue SQLite3::ConstraintException, "column name is not unique"
             raise RoleExistenceException, "role already exist - #{r}"
           end
@@ -43,7 +54,7 @@ module Houcho
       @db.transaction do
         role.each do |r|
           raise RoleExistenceException, "role does not exist - #{r}" unless exist?(r)
-          @db.execute("DELETE FROM role WHERE name = '#{r}'")
+          @db.execute("DELETE FROM role WHERE name = ?", r)
         end
       end
     end
@@ -59,62 +70,33 @@ module Houcho
     def list
       @db.execute("SELECT name FROM role").flatten
     end
-  end
-end
-
-__END__
 
 
-
-    def all
-      YamlHandle::Loader.new('./role/roles.yaml').data.values.sort
-    end
-
-
-
-
-    def index(role)
-      @data.invert[role]
-    end
-
-
-    def indexes_regexp(role)
-      @roles.data.select { |index, rolename| rolename =~ role }.keys
-    end
-
-
-    def name(index)
-      @roles.data[index]
-    end
-
-
-    def details(roles)
+    def details(role)
+      role = role.is_a?(Array) ? role : [role]
       result = {}
+      hostobj = Host.new
+      specobj = Spec.new
+      orobj = OuterRole.new
 
-      # too lengthy implementation... I think necessary to change...
-      roles = roles.map do |role|
-        if self.index(role)
-          role
-        else
-          self.indexes_regexp(Regexp.new(role)).map { |index| self.name(index) }
+      role.each do |r|
+        id = id(r)
+        next if ! id
+        id = id.is_a?(Array) ? id : [id]
+
+        id.each do |i|
+          hosts = hostobj.list(i)
+          specs = specobj.list(i)
+          outerroles = orobj.list(i)
+          outerhosts = orobj.details(outerroles)
+
+          tmp = {}
+          tmp["host"] = hosts unless hosts.empty?
+          tmp["spec"] = specs unless specs.empty?
+          tmp["outer role"] = outerhosts unless outerhosts.empty?
+
+          result[r] = tmp
         end
-      end.flatten.sort.uniq
-
-      roles.each do |role|
-        index = self.index(role)
-        next if ! index
-
-        hosts   = Host.elements(index)
-        specs   = Spec.elements(index)
-        cfroles = CloudForecast::Role.elements(index)
-        cfhosts = CloudForecast::Role.details(cfroles)
-
-        r         = {}
-        r['host'] = hosts   if ! hosts.empty?
-        r['spec'] = specs   if ! specs.empty?
-        r['cf']   = cfhosts if ! cfhosts.empty?
-
-        result[role] = r
       end
 
       result

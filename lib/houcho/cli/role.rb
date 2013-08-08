@@ -1,5 +1,4 @@
 # -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
 
 require "thor"
 require "houcho/role"
@@ -14,20 +13,21 @@ module Houcho
       # ERROR: houcho role was called with arguments ["create", "target"]
       # Usage: "houcho role".
       # ってエラった。
-      # Houcho::Role を特異クラスにするとかだとなんか違うし。
       # Thor がサブコマンドのクラスをどう扱っているのかをちゃんと調べるなりして実装を変える。
       @@r = Houcho::Role.new
 
       desc 'create [role1 role2 role3...]', 'cretate role'
       def create(*args)
+        Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
         @@r.create(args)
-      rescue SQLite3::ConstraintException => e
+      rescue Houcho::RoleExistenceException => e
         puts e.message
         exit!
       end
 
       desc 'delete [role1 role2 role3...]', 'delete a role'
       def delete(*args)
+        Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
         @@r.delete(args)
       rescue SQLite3::ConstraintException => e
         puts e.message
@@ -41,48 +41,36 @@ module Houcho
         puts e.message
         exit!
       end
-    end
-  end
-end
-
-__END__
 
       desc 'details [role1 role2...]', 'show details about role'
       def details(*args)
-        Helper.empty_args(self, shell, __method__) if args.empty?
-        Houcho::Console.puts_details(Houcho::Role.details(args))
+        Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
+        Houcho::CLI::Main.puts_details(@@r.details(args))
       end
 
-      desc 'show', 'show all of roles'
-      def show
-        puts Houcho::Role.all.join("\n")
+      desc 'list', 'show all of roles'
+      def list
+        puts @@r.list.join("\n")
       end
 
       desc 'exec (role1 role2..) [options]', 'run role'
       option :exclude_hosts, :type => :array, :desc => '--exclude-hosts host1 host2 host3...'
-      option :ukigumo, :type => :boolean, :desc => 'post results to UkigumoServer'
-      option :ikachan, :type => :boolean, :desc => 'post fail results to Ikachan'
-      option :dry_run, :type => :boolean, :desc => 'show commands that may exexute'
+      option :dry_run, :type => :boolean, :default => false, :desc => 'show commands that may exexute'
       def exec(*args)
-        Helper.empty_args(self, shell, __method__) if args.empty?
+        Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
+        runner = Houcho::Spec::Runner.new
 
-        begin
-          messages = Houcho::Spec::Runner.exec(
-            args, (options[:exclude_hosts] || []), [], [],
-            {
-              ukigumo: options[:ukigumo],
-              ikachan: options[:ikachan],
-            },
+#        begin
+          runner.execute_role(
+            args,
+            (options[:exclude_hosts] || []),
             options[:dry_run],
+            true #output to console
           )
-        rescue
-          puts $!.message
-          exit!
-        end
-
-        messages.each do |msg|
-          puts msg
-        end
+#        rescue
+#          puts $!.message
+#          exit!
+#        end
       end
     end
   end

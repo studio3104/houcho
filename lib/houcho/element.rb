@@ -1,6 +1,3 @@
-# -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
-
 require 'houcho/role'
 require "houcho/database"
 
@@ -20,23 +17,28 @@ module Houcho
 
     def list(role_id = nil)
       sql = "SELECT T1.name FROM #{@type} T1"
-      sql += " JOIN role_#{@type} T2 ON T1.id = T2.#{@type}_id HAVING T2.role_id = #{role_id}" if role_id
+      sql += " JOIN role_#{@type} T2 ON T1.id = T2.#{@type}_id WHERE T2.role_id = #{role_id}" if role_id
 
       @db.execute(sql).flatten
     end
 
 
     def details(elements)
-      # とんでもないメソッドチェーンになってるので直す
+      elements = elements.is_a?(Array) ? elements : [elements]
       result = {}
+
       elements.each do |element|
-        result[element] = {
-          'role' =>
-          @db.execute("SELECT role_id FROM role_#{@type} WHERE name = ?", element).flatten.map do |id|
-            @db.execute("SELECT name FROM role WHERE id = ?", id)
-          end.flatten
-        }
+        roles = @db.execute("
+          SELECT role.name
+          FROM role, #{@type}, role_#{@type}
+          WHERE role_#{@type}.#{@type}_id = #{@type}.id
+          AND role_#{@type}.role_id = role.id
+          AND #{@type}.name = ?
+        ", element).flatten.sort.uniq
+
+        result[element] = { "role" => roles }
       end
+
       result
     end
 
@@ -88,7 +90,7 @@ module Houcho
           @db.execute(
             "DELETE FROM role_#{@type} WHERE role_id = ? AND #{@type}_id = ?",
             role_id,
-            element
+            id(element)
           )
 
           begin

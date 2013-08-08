@@ -1,6 +1,3 @@
-# -*- encoding: utf-8 -*-
-$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
-require "houcho"
 require "houcho/role"
 require "houcho/element"
 require "houcho/config"
@@ -15,21 +12,19 @@ module Houcho
     end
 
 
+    def check_existenxe(specs)
+      files = specs.partition { |spec| File.exist?("#{@specdir}/#{spec}_spec.rb") }
+      raise SpecFileException, "No such spec file - #{files[1].join(",")}" unless files[1].empty?
+
+      files[0]
+    end
+
+
     def attach(specs, roles)
-      free_path = specs.partition { |spec| File.exist?(spec) }
-      under_repo = free_path[1].partition { |spec| File.exist?("#{@specdir}/#{spec}_spec.rb") }
+      specs = [specs] unless specs.is_a?(Array)
+      roles = [roles] unless roles.is_a?(Array)
+      files = check_existenxe(specs)
 
-      nofiles = free_path[1] + under_repo[1] - under_repo[0]
-      raise SpecFileException, "No such spec file - #{nofiles.join(",")}" unless nofiles.empty?
-
-      free_path[0].each do |spec|
-        if File.exist?("#{@specdir}/#{spec.sub(/.+\/(.+)$/, '\1')}")
-          raise SpecFileException, "Spec file of same name already exists in houcho spec directory - #{spec}"
-        end
-      end
-
-      FileUtils.cp(free_path[0], @specdir)
-      files = under_repo[0] + free_path[0].map { |s| s.sub(/.+\/(.+)\_spec\.rb$/, '\1') }
       super(files, roles)
     end
 
@@ -47,7 +42,7 @@ module Houcho
         begin
           delete([spec])
         rescue SpecFileException
-          @db.handle.execute("DELETE FROM #{@table} WHERE name = '#{spec}'")
+          @db.execute("DELETE FROM #{@table} WHERE name = ?", spec)
           retry
         end
       end

@@ -1,5 +1,3 @@
-$LOAD_PATH.unshift '/Users/JP11546/Documents/houcho/lib'
-
 require "houcho/config"
 require "houcho/database"
 require "yaml"
@@ -89,7 +87,6 @@ class OuterRole
       end
 
       db.commit
-      db.close
     end
   end
 end

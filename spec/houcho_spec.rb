@@ -1,4 +1,4 @@
-$LOAD_PATH.unshift "/Users/JP11546/Documents/houcho/lib"
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
 require "tmpdir"
 spectmp = Dir.mktmpdir("houcho")
@@ -6,22 +6,37 @@ ENV["HOUCHO_ROOT"] = spectmp
 
 require "rspec"
 require "houcho"
-require "houcho/role"
-require "houcho/host"
-require "houcho/element"
-require "tempfile"
 require "fileutils"
 
 describe Houcho do
   before :all do
+    Houcho::Repository.init
+
     @role = Houcho::Role.new
     @host = Houcho::Host.new
+    @spec = Houcho::Spec.new
+    @outerrole = Houcho::OuterRole.new
+    @specrunner = Houcho::Spec::Runner.new
 
     @role.create(["studio3104", "studio3105"])
     @host.attach("hostA", "studio3104")
 
-#    File.write("spec/specA_spec.rb"," ")
-#    Houcho::Spec.attach("specA", "studio3104")
+    File.write("#{Houcho::Config::CFYAMLDIR}/cf.yaml", <<YAML
+--- #houcho
+servers:
+  - label: rspec
+    config: studio3104
+    hosts:
+      - 192.168.1.11 test1.studio3104.com
+      - 192.168.1.12 test2.studio3104.com
+YAML
+    )
+    Houcho::OuterRole::CloudForecast.load
+    @outerrole.attach("houcho::rspec::studio3104", "studio3104")
+
+    File.write("#{Houcho::Config::SPECDIR}/specA_spec.rb"," ")
+    File.write("#{Houcho::Config::SPECDIR}/specB_spec.rb"," ")
+    @spec.attach("specA", "studio3104")
   end
 
   describe Houcho::Role do
@@ -85,25 +100,28 @@ describe Houcho do
     end
 
 
-=begin
     context "get details of a role" do
       it do
-        expect(Houcho::Role.details(["studio3104"])).to eq(
+        expect(@role.details(["studio3104"])).to eq(
           {
             "studio3104" => {
-              "host" => [ "hostA" ],
-              "spec" => [ "specA" ],
-              "cf"   => { "houcho::rspec::studio3104" => { "host" => [ "test1.studio3104.com", "test2.studio3104.com", ] } }
+              "host"       => [ "hostA" ],
+              "spec"       => [ "specA" ],
+              "outer role" => {
+                "houcho::rspec::studio3104" => {
+                  "host" => [ "test1.studio3104.com", "test2.studio3104.com" ] 
+                }
+              }
             }
           }
         )
       end
     end
 
-    it { expect(Houcho::Role.index("studio3104")).to be(1)}
-    it { expect(Houcho::Role.indexes_regexp(/studio310\d/)).to eq([1,2])}
-    it { expect(Houcho::Role.name(1)).to eq("studio3104")}
-=end
+
+    it { expect(@role.id("studio3104")).to be(1)}
+    it { expect(@role.id(/studio310\d/)).to eq([1,2])}
+    it { expect(@role.name(1)).to eq("studio3104")}
   end
 
 
@@ -125,7 +143,6 @@ describe Houcho do
       end
     end
 
-=begin
     context "get details of a host" do
       it "host from original defined" do
         expect(@host.details(["hostA"])).to eq(
@@ -134,84 +151,149 @@ describe Houcho do
       end
 
       it "host from cf defined" do
-        expect(Houcho::Host.details(["test1.studio3104.com"])).to eq(
-          { "test1.studio3104.com" => { "cf" => [ "houcho::rspec::studio3104" ] } }
+        expect(@host.details(["test1.studio3104.com"])).to eq(
+          { "test1.studio3104.com" => { "outer role" => [ "houcho::rspec::studio3104" ] } }
         )
       end
 
       it "both" do
-        expect(Houcho::Host.details(["hostA", "test1.studio3104.com"])).to eq(
+        expect(@host.details(["hostA", "test1.studio3104.com"])).to eq(
           {
             "hostA"                => { "role" => [ "studio3104" ] },
-            "test1.studio3104.com" => { "cf"   => [ "houcho::rspec::studio3104" ] },
+            "test1.studio3104.com" => { "outer role" => [ "houcho::rspec::studio3104" ] },
           }
         )
       end
+    end
 
-      context "get host list attached or defined cf" do
-        it "all of hosts" do
-          expect(Houcho::Host.elements).to eq(["hostA"])
-        end
+    context "get host list attached or defined cf" do
+      it "all of hosts" do
+        expect(@host.list).to eq(["hostA", "test1.studio3104.com", "test2.studio3104.com"])
+      end
 
-        it "hosts of one of role" do
-          expect(Houcho::Host.elements(1)).to eq(["hostA"])
-        end
+      it "hosts of one of role" do
+        expect(@host.list(1)).to eq(["hostA"])
       end
     end
-=end
+
+    context "set, get and delete attribute of a host" do
+      it { @host.set_attr("hostA", {
+        "A" => "apple",
+        "B" => "banana",
+        "C" => "chocolate",
+      })}
+
+      it { expect(@host.get_attr("hostA")).to(
+        eq({
+          :A => "apple",
+          :B => "banana",
+          :C => "chocolate",
+        })
+      )}
+
+      it { expect { @host.set_attr("hostA", { "A" => "anpanman" }) }.to(
+        raise_error(Houcho::HostAttributeException, "attribute has defined value already - A")
+      )}
+
+      it "force set" do
+        expect(@host.set_attr!("hostA", { "A" => "anpanman" }))
+      end
+
+      it { expect(@host.del_attr("hostA", "C")).to eq({ :C => "chocolate" }) }
+
+      it { expect(@host.del_attr("hostA")).to(
+        eq({ :A => "anpanman", :B => "banana" }) 
+      )}
+
+      it { expect(@host.get_attr("hostA")).to eq({}) }
+    end
   end
 
 
-  after :all do
-    FileUtils.rm_rf(spectmp)
-  end
-end
-
-
-__END__
   describe Houcho::Spec do
+    context "get details of a spec" do
+      it "host from original defined" do
+        expect(@spec.details(["specA"])).to eq(
+          { "specA" => { "role" => [ "studio3104" ] } }
+        )
+      end
+    end
 
+    context "attach and detach hosts to roles" do
+      it { @spec.attach(["specA", "specB"], ["studio3104", "studio3105"]) }
+      it { @spec.detach("specB", ["studio3104", "studio3105"]) }
+
+      it do
+        expect { @spec.attach("specA", "invalid_role") }.to(
+          raise_error(Houcho::RoleExistenceException, "role does not exist - invalid_role")
+        )
+      end
+
+      it do
+        expect { @spec.detach("specA", "invalid_role") }.to(
+          raise_error(Houcho::RoleExistenceException, "role does not exist - invalid_role")
+        )
+      end
+
+      it do
+        expect { @spec.attach("invalid_spec", "studio3104") }.to(
+          raise_error(Houcho::SpecFileException, "No such spec file - invalid_spec")
+        )
+      end
+    end
   end
 
 
   describe Houcho::Spec::Runner do
     context "run role" do
       it do
-        expect(Houcho::Spec::Runner.exec(["studio3104"],[],[],[],{},true)).to eq([
-          "TARGET_HOST=hostA parallel_rspec spec/specA_spec.rb",
-          "TARGET_HOST=test1.studio3104.com parallel_rspec spec/specA_spec.rb",
-          "TARGET_HOST=test2.studio3104.com parallel_rspec spec/specA_spec.rb"
+        expect(@specrunner.execute_role("studio3104", [], true)).to eq([
+          "TARGET_HOST=hostA parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test1.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test2.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb"
         ])
       end
 
       it "with exclude host" do
-        expect(Houcho::Spec::Runner.exec(["studio3104"],["test1.studio3104.com"],[],[],{},true)).to eq([
-          "TARGET_HOST=hostA parallel_rspec spec/specA_spec.rb",
-          "TARGET_HOST=test2.studio3104.com parallel_rspec spec/specA_spec.rb"
+        expect(@specrunner.execute_role("studio3104", "test1.studio3104.com", true)).to eq([
+          "TARGET_HOST=hostA parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test2.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb"
         ])
       end
     end
 
     context "run manually" do
       it do
-        expect(Houcho::Spec::Runner.exec([],[],["test3.studio3104.com", "test4.studio3104.com"],["specA"],{},true)).to eq([
-          "TARGET_HOST=test3.studio3104.com parallel_rspec spec/specA_spec.rb",
-          "TARGET_HOST=test4.studio3104.com parallel_rspec spec/specA_spec.rb"
+        expect(@specrunner.execute_manually(
+          ["test3.studio3104.com", "test4.studio3104.com"],
+          "specA",
+          true
+        )).to eq([
+          "TARGET_HOST=test3.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test4.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb"
         ])
       end
 
       it "case of spec not exist" do
-        expect { Houcho::Spec::Runner.exec([],[],["test5.studio3104.com"],["specA", "specX"],{},true) }.to raise_error
+        expect { @specrunner.execute_manually("test5.studio3104.com", ["specA", "specX"], true) }.to(
+          raise_error Houcho::SpecFileException, "No such spec file - specX"
+        )
       end
     end
 
     context "check spec" do
-      it { expect(Houcho::Spec::Runner.check(["specA"], 2, true).size).to be(2) }
+      it { expect(@specrunner.check("specA", 2, true).size).to be(2) }
+
       it "case of spec not exist" do
-        expect { Houcho::Spec::Runner.check(["specX"], 2, true) }.to raise_error
+        expect { @specrunner.check("specX", 2) }.to(
+          raise_error Houcho::SpecFileException, "No such spec file - specX"
+        )
       end
     end
   end
 
 
+  after :all do
+    FileUtils.rm_rf(spectmp)
+  end
 end

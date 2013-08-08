@@ -1,10 +1,12 @@
-require "houcho/config"
+require "rubygems"
+require "houcho/role"
+require "houcho/element"
+require "houcho/host"
+require "houcho/spec"
+require "houcho/spec/runner"
+require "houcho/outerrole"
+require "houcho/outerrole/cloudforecast"
+require "houcho/repository"
 
 module Houcho
-  [
-    Houcho::Config::APPROOT,
-    Houcho::Config::SPECDIR
-  ].each do |d|
-    Dir.mkdir(d) unless Dir.exist?(d)
-  end
 end
