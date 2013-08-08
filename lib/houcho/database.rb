@@ -2,14 +2,12 @@ require "sqlite3"
 require "houcho/config"
 
 module Houcho
-  class DB
-    attr_reader :handle
+  module Database
+    Handle = SQLite3::Database.new("#{Houcho::Config::APPROOT}/houcho.db")
+    Handle.execute("PRAGMA foreign_keys = ON")
 
-    def initialize
-      @handle = SQLite3::Database.new("#{Houcho::Config::APPROOT}/houcho.db")
-      @handle.execute("PRAGMA foreign_keys = ON")
-
-      @handle.execute_batch <<-SQL
+    def create_tables
+      Handle.execute_batch <<-SQL
         CREATE TABLE IF NOT EXISTS role (
           id INTEGER NOT NULL PRIMARY KEY,
           name VARCHAR NOT NULL UNIQUE
@@ -74,6 +72,22 @@ module Houcho
           UNIQUE(role_id, outerrole_id),
           FOREIGN KEY (role_id) REFERENCES role (id) ON DELETE RESTRICT,
           FOREIGN KEY (outerrole_id) REFERENCES outerrole (id) ON DELETE RESTRICT
+        );
+
+        CREATE TABLE IF NOT EXISTS attribute (
+          id INTEGER NOT NULL PRIMARY KEY,
+          name VARCHAR NOT NULL UNIQUE
+        );
+
+        CREATE TABLE IF NOT EXISTS attribute_value (
+          id INTEGER NOT NULL PRIMARY KEY,
+          attr_id INTEGER NOT NULL,
+          element_type INTEGER NOT NULL,
+          element_id INTEGER NOT NULL,
+          value VARCHAR NOT NULL,
+          COMMENT "element_type => {0:role, 1:outerrole, 2:host}",
+          UNIQUE(attr_id, element_type, element_id),
+          FOREIGN KEY (attr_id) REFERENCES attribute (id) ON DELETE RESTRICT
         );
       SQL
     end

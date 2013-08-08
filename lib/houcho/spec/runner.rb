@@ -15,6 +15,7 @@ class Spec
       @role = Houcho::Role.new
       @host = Houcho::Host.new
       @spec = Houcho::Spec.new
+      @outerrole = Houcho::OuterRole.new
       @specdir = Houcho::Config::SPECDIR
       @logger = Logger.new(Houcho::Config::SPECLOG, 10)
     end
@@ -99,6 +100,10 @@ class Spec
         end
 
         v["host"].each do |host|
+          attr = @role.get_attr(role).merge(
+            @outerrole.get_attr(v["outer role"]).merge(@host.get_attr(host))
+          )
+
           result = systemu(
             command,
             :env => {

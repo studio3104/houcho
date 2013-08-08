@@ -4,7 +4,7 @@ require "houcho/database"
 module Houcho
   class Element
     def initialize(type)
-      @db = Houcho::DB.new.handle
+      @db = Houcho::Database::Handle
       @role = Houcho::Role.new
       @type = type
     end
@@ -59,7 +59,7 @@ module Houcho
         role_id = @role.id(role)
         raise RoleExistenceException, "role does not exist - #{role}" unless role_id
 
-        @db.transaction
+        @db.transaction do
 
         elements.each do |element|
           @db.execute("INSERT INTO #{@type}(name) VALUES(?)", element) unless id(element)
@@ -71,7 +71,7 @@ module Houcho
           end
         end
 
-        @db.commit
+        end #end of transaction
       end
     end
 
@@ -84,7 +84,7 @@ module Houcho
         role_id = @role.id(role)
         raise RoleExistenceException, "role does not exist - #{role}" if role_id.nil?
 
-        @db.transaction
+        @db.transaction do
 
         elements.each do |element|
           @db.execute(
@@ -100,7 +100,7 @@ module Houcho
           end
         end
 
-        @db.commit
+        end #end of transaction
       end
     end
   end

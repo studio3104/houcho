@@ -118,10 +118,35 @@ YAML
       end
     end
 
-
     it { expect(@role.id("studio3104")).to be(1)}
     it { expect(@role.id(/studio310\d/)).to eq([1,2])}
     it { expect(@role.name(1)).to eq("studio3104")}
+
+    context "set, get and delete attribute of a role" do
+      it { @role.set_attr("studio3104", { A: "apple", B: "banana", C: "chocolate" }) }
+      it { expect(@role.get_attr("studio3104")).to eq({ A: "apple", B: "banana", C: "chocolate" }) }
+      it { expect(@role.get_attr_json("studio3104")).to eq("{\"A\":\"apple\",\"B\":\"banana\",\"C\":\"chocolate\"}") }
+      it { expect(@role.get_attr("studio3104", "A")).to eq({ A: "apple" }) }
+      it { expect(@role.get_attr("invalid_role")).to eq({}) }
+      it { expect(@role.get_attr_json("invalid_role")).to eq("{}") }
+
+      it { expect { @role.set_attr("studio3104", { "A" => "anpanman" }) }.to(
+        raise_error(Houcho::AttributeExceptiotn, "attribute has already defined value in role - A")
+      )}
+
+      it "force set" do
+        expect(@role.set_attr!("studio3104", { "A" => "anpanman" }))
+      end
+
+      it { expect { @role.set_attr("invalid_role",{ A: "apple", B: "banana", C: "chocolate" }) }.to(
+        raise_error(Houcho::RoleExistenceException, "role does not exist - invalid_role") 
+      ) }
+
+      it { expect(@role.del_attr("studio3104", "C")).to eq({ :C => "chocolate" }) }
+      it { expect(@role.get_attr("studio3104")).to eq({ A: "anpanman", B: "banana" }) }
+      it { expect(@role.del_attr("studio3104")).to eq({ A: "anpanman", B: "banana" }) }
+      it { expect(@role.get_attr("studio3104")).to eq({}) }
+    end
   end
 
 
@@ -177,34 +202,28 @@ YAML
     end
 
     context "set, get and delete attribute of a host" do
-      it { @host.set_attr("hostA", {
-        "A" => "apple",
-        "B" => "banana",
-        "C" => "chocolate",
-      })}
-
-      it { expect(@host.get_attr("hostA")).to(
-        eq({
-          :A => "apple",
-          :B => "banana",
-          :C => "chocolate",
-        })
-      )}
+      it { @host.set_attr("hostA", { A: "apple", B: "banana", C: "chocolate" }) }
+      it { expect(@host.get_attr("hostA")).to eq({ A: "apple", B: "banana", C: "chocolate" }) }
+      it { expect(@host.get_attr_json("hostA")).to eq("{\"A\":\"apple\",\"B\":\"banana\",\"C\":\"chocolate\"}") }
+      it { expect(@host.get_attr("hostA", "A")).to eq({ A: "apple" }) }
+      it { expect(@host.get_attr("hostX")).to eq({}) }
+      it { expect(@host.get_attr_json("hostX")).to eq("{}") }
 
       it { expect { @host.set_attr("hostA", { "A" => "anpanman" }) }.to(
-        raise_error(Houcho::HostAttributeException, "attribute has defined value already - A")
+        raise_error(Houcho::AttributeExceptiotn, "attribute has already defined value in host - A")
       )}
 
       it "force set" do
         expect(@host.set_attr!("hostA", { "A" => "anpanman" }))
       end
 
+      it { expect { @host.set_attr("hostX",{ A: "apple", B: "banana", C: "chocolate" }) }.to(
+        raise_error(Houcho::HostExistenceException, "host does not exist - hostX") 
+      ) }
+
       it { expect(@host.del_attr("hostA", "C")).to eq({ :C => "chocolate" }) }
-
-      it { expect(@host.del_attr("hostA")).to(
-        eq({ :A => "anpanman", :B => "banana" }) 
-      )}
-
+      it { expect(@host.get_attr("hostA")).to eq({ A: "anpanman", B: "banana" }) }
+      it { expect(@host.del_attr("hostA")).to eq({ A: "anpanman", B: "banana" }) }
       it { expect(@host.get_attr("hostA")).to eq({}) }
     end
   end
@@ -240,6 +259,35 @@ YAML
           raise_error(Houcho::SpecFileException, "No such spec file - invalid_spec")
         )
       end
+    end
+  end
+
+
+  describe Houcho::OuterRole do
+    context "set, get and delete attribute of a role" do
+      it { @outerrole.set_attr("houcho::rspec::studio3104", { A: "apple", B: "banana", C: "chocolate" }) }
+      it { expect(@outerrole.get_attr("houcho::rspec::studio3104")).to eq({ A: "apple", B: "banana", C: "chocolate" }) }
+      it { expect(@outerrole.get_attr_json("houcho::rspec::studio3104")).to eq("{\"A\":\"apple\",\"B\":\"banana\",\"C\":\"chocolate\"}") }
+      it { expect(@outerrole.get_attr("houcho::rspec::studio3104", "A")).to eq({ A: "apple" }) }
+      it { expect(@outerrole.get_attr("invalid_role")).to eq({}) }
+      it { expect(@outerrole.get_attr_json("invalid_role")).to eq("{}") }
+
+      it { expect { @outerrole.set_attr("houcho::rspec::studio3104", { "A" => "anpanman" }) }.to(
+        raise_error(Houcho::AttributeExceptiotn, "attribute has already defined value in outerrole - A")
+      )}
+
+      it "force set" do
+        expect(@outerrole.set_attr!("houcho::rspec::studio3104", { "A" => "anpanman" }))
+      end
+
+      it { expect { @outerrole.set_attr("invalid_role",{ A: "apple", B: "banana", C: "chocolate" }) }.to(
+        raise_error(Houcho::OuterRoleExistenceException, "outer role does not exist - invalid_role") 
+      ) }
+
+      it { expect(@outerrole.del_attr("houcho::rspec::studio3104", "C")).to eq({ :C => "chocolate" }) }
+      it { expect(@outerrole.get_attr("houcho::rspec::studio3104")).to eq({ A: "anpanman", B: "banana" }) }
+      it { expect(@outerrole.del_attr("houcho::rspec::studio3104")).to eq({ A: "anpanman", B: "banana" }) }
+      it { expect(@outerrole.get_attr("houcho::rspec::studio3104")).to eq({}) }
     end
   end
 

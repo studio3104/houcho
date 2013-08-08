@@ -16,9 +16,9 @@ module Houcho::CLI
       else
         @@h.set_attr(host, options[:value])
       end
-    rescue Houcho::HostAttributeException => e
-      puts e.message
-      exit!
+#    rescue Houcho::AttributeException => e
+#      puts e.message
+#      exit!
     end
 
     desc "get [host] [attr name]", "get attribute of host"

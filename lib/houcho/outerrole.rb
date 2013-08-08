@@ -1,9 +1,15 @@
 require "houcho/element"
+require "houcho/attribute"
 
 module Houcho
+  class OuterRoleExistenceException < Exception; end
+
   class OuterRole < Element
+    include Houcho::Attribute
+
     def initialize
       super("outerrole")
+      @type_id = 1
     end
 
     def details(outer_role)
@@ -36,6 +42,11 @@ module Houcho
       end
 
       hosts.flatten.uniq.sort
+    end
+
+    private
+    def raise_target_does_not_exist(target)
+      raise OuterRoleExistenceException, "outer role does not exist - #{target}"
     end
   end
 end

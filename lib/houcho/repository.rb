@@ -1,4 +1,7 @@
 require "houcho/config"
+require "houcho/database"
+
+include Houcho::Database
 
 module Houcho
   class Repository
@@ -51,6 +54,8 @@ RSpec.configure do |c|
 end
 EOD
       ) unless File.exist?("#{Houcho::Config::SPECDIR}/spec_helper.rb")
+
+      create_tables
     end
   end
 end

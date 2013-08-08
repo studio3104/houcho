@@ -2,13 +2,18 @@ require "houcho/database"
 require "houcho/host"
 require "houcho/spec"
 require "houcho/outerrole"
+require "houcho/attribute"
 
 module Houcho
   class RoleExistenceException < Exception; end
 
   class Role
+    include Houcho::Attribute
+
     def initialize
-      @db = Houcho::DB.new.handle
+      @db = Houcho::Database::Handle
+      @type = "role"
+      @type_id = 0
     end
 
 
@@ -100,6 +105,11 @@ module Houcho
       end
 
       result
+    end
+
+    private
+    def raise_target_does_not_exist(target)
+      raise RoleExistenceException, "role does not exist - #{target}"
     end
   end
 end

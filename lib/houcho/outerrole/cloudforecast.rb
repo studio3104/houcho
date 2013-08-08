@@ -58,8 +58,8 @@ class OuterRole
 
 
     def save_cf_role(cfrole)
-      db = Houcho::DB.new.handle
-      db.transaction
+      db = Houcho::Database::Handle
+      db.transaction do
 
       cfrole.each do |outerrole, hosts|
         begin
@@ -86,7 +86,7 @@ class OuterRole
         end
       end
 
-      db.commit
+      end #end of transaction
     end
   end
 end

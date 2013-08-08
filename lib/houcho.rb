@@ -7,6 +7,7 @@ require "houcho/spec/runner"
 require "houcho/outerrole"
 require "houcho/outerrole/cloudforecast"
 require "houcho/repository"
+require "houcho/attribute"
 
 module Houcho
 end
