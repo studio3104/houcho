@@ -25,11 +25,20 @@ module Houcho
       end
 
 
-      desc 'detach [spec1 spec2 spec3...] --roles [role1 role2...]', 'detach spec from spec'
+      desc 'detach [spec1 spec2 spec3...]', 'detach spec from spec'
       option :roles, :type => :array, :required => true, :desc => 'specify the roles separated by spaces.'
       def detach(*args)
         @@s.detach(args, options[:roles])
       rescue RoleExistenceException, SQLite3::ConstraintException => e
+        puts e.message
+        exit!
+      end
+
+
+      desc "rename [from] [to]", "rename spec file"
+      def rename(from, to)
+        @@s.rename(from, to)
+      rescue SpecFileException => e
         puts e.message
         exit!
       end
@@ -53,55 +62,42 @@ module Houcho
       def details(*args)
         Houcho::CLI::Main.puts_details(@@s.details(args))
       end
+
+
+      desc 'check [spec1 spec2...]', 'run the spec sampled appropriately to the associated host'
+      option :samples, :type => :numeric, :default => 5, :desc => 'number of sample hosts'
+      def check(*args)
+        Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
+        runner = Houcho::Spec::Runner.new
+
+        begin
+          exit! unless runner.check(args, options[:samples], false, true)
+        rescue SpecFileException => e
+          puts e.message
+          exit!
+        end
+      end
+
+
+      desc 'exec [spec1 spec2..]', 'run spec'
+      option :hosts,   :type => :array,   :desc => '--hosts host1 host2 host3...', :required => true
+      option :dry_run, :type => :boolean, :default => false, :desc => 'show commands that may exexute'
+      def exec(*args)
+        Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
+        runner = Houcho::Spec::Runner.new
+
+        begin
+          exit! unless runner.execute_manually(
+            options[:hosts],
+            args,
+            options[:dry_run],
+            true #output to console
+          )
+        rescue Houcho::SpecFileException => e
+          puts e.message
+          exit!
+        end
+      end
     end
   end
 end
-
-__END__
-
-    desc 'check [options]', 'run the spec sampled appropriately to the associated host'
-    option :sample_host_count, :type => :numeric, :default => 5, :desc => 'number of sample hosts'
-    def check(*args)
-      Helper.empty_args(self, shell, __method__) if args.empty?
-
-      begin
-        messages = Houcho::Spec::Runner.check(args, options[:sample_host_count])
-      rescue RuntimeError => e
-        puts e.message
-        exit!
-      end
-
-      messages.each do |msg|
-        puts msg
-      end
-    end
-
-    desc 'exec (spec1 spec2..) [options]', 'run serverspec manually'
-    option :hosts,   :type => :array,   :desc => '--hosts host1 host2 host3...', :required => true
-    option :ukigumo, :type => :boolean, :desc => 'post results to UkigumoServer'
-    option :ikachan, :type => :boolean, :desc => 'post fail results to Ikachan'
-    option :dry_run, :type => :boolean, :desc => 'show commands that may exexute'
-    def exec(*args)
-      Helper.empty_args(self, shell, __method__) if args.empty?
-
-      begin
-        messages = Houcho::Spec::Runner.exec(
-          [], [], options[:hosts], args,
-          {
-            ukigumo: options[:ukigumo],
-            ikachan: options[:ikachan],
-          },
-          options[:dry_run],
-        )
-      rescue RuntimeError => e
-        puts e.message
-        exit!
-      end
-
-      messages.each do |msg|
-        puts msg
-      end
-    end
-  end
-
-

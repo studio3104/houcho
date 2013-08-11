@@ -8,12 +8,6 @@ module Houcho
     class Role < Thor
       namespace :role
 
-      # インスタンス変数にしたら各メソッドから参照される @r が nil になってしまってしたのでとりあえずでクラス変数にしてしまった
-      # コンストラクタ書いてその中で @r を初期化したら、
-      # ERROR: houcho role was called with arguments ["create", "target"]
-      # Usage: "houcho role".
-      # ってエラった。
-      # Thor がサブコマンドのクラスをどう扱っているのかをちゃんと調べるなりして実装を変える。
       @@r = Houcho::Role.new
 
       desc 'create [role1 role2 role3...]', 'cretate role'
@@ -60,17 +54,17 @@ module Houcho
         Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
         runner = Houcho::Spec::Runner.new
 
-#        begin
-          runner.execute_role(
+        begin
+          exit! unless runner.execute_role(
             args,
             (options[:exclude_hosts] || []),
             options[:dry_run],
             true #output to console
           )
-#        rescue
-#          puts $!.message
-#          exit!
-#        end
+        rescue Houcho::SpecFileException => e
+          puts e.message
+          exit!
+        end
       end
     end
   end

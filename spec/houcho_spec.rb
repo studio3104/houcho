@@ -12,15 +12,6 @@ describe Houcho do
   before :all do
     Houcho::Repository.init
 
-    @role = Houcho::Role.new
-    @host = Houcho::Host.new
-    @spec = Houcho::Spec.new
-    @outerrole = Houcho::OuterRole.new
-    @specrunner = Houcho::Spec::Runner.new
-
-    @role.create(["studio3104", "studio3105"])
-    @host.attach("hostA", "studio3104")
-
     File.write("#{Houcho::Config::CFYAMLDIR}/cf.yaml", <<YAML
 --- #houcho
 servers:
@@ -31,13 +22,31 @@ servers:
       - 192.168.1.12 test2.studio3104.com
 YAML
     )
-    Houcho::OuterRole::CloudForecast.load
-    @outerrole.attach("houcho::rspec::studio3104", "studio3104")
 
     File.write("#{Houcho::Config::SPECDIR}/specA_spec.rb"," ")
     File.write("#{Houcho::Config::SPECDIR}/specB_spec.rb"," ")
+    File.write("#{Houcho::Config::SPECDIR}/specC_spec.rb"," ")
+
+    @role = Houcho::Role.new
+    @host = Houcho::Host.new
+    @spec = Houcho::Spec.new
+    @outerrole = Houcho::OuterRole.new
+    @specrunner = Houcho::Spec::Runner.new
+
+    @role.create(["studio3104", "studio3105"])
+
+    Houcho::OuterRole::CloudForecast.load
+
+    @host.attach("hostA", "studio3104")
+    @outerrole.attach("houcho::rspec::studio3104", "studio3104")
     @spec.attach("specA", "studio3104")
   end
+
+
+  after :all do
+    FileUtils.rm_rf(spectmp)
+  end
+
 
   describe Houcho::Role do
     context "create and delete a role" do
@@ -193,7 +202,7 @@ YAML
 
     context "get host list attached or defined cf" do
       it "all of hosts" do
-        expect(@host.list).to eq(["hostA", "test1.studio3104.com", "test2.studio3104.com"])
+        expect(@host.list).to eq(["test1.studio3104.com", "test2.studio3104.com", "hostA"])
       end
 
       it "hosts of one of role" do
@@ -260,21 +269,77 @@ YAML
         )
       end
     end
+
+    context "delete spec file" do
+      it {
+        @spec.check_existence("specC")
+        @spec.delete("specC")
+        expect { @spec.check_existence("specC") }.to(
+          raise_error(Houcho::SpecFileException, "No such spec file - specC")
+        )
+      }
+      it { expect { @spec.delete("specX") }.to(
+        raise_error(Houcho::SpecFileException, "No such spec file - specX")
+      ) }
+      it { expect { @spec.delete("specA") }.to(
+        raise_error(Houcho::SpecFileException,"spec file has been attached to role - specA")
+      ) }
+      it "force delete" do
+        @spec.check_existence("specA")
+        @spec.delete!("specA")
+        expect { @spec.check_existence("specA") }.to(
+          raise_error(Houcho::SpecFileException, "No such spec file - specA")
+        )
+      end
+      it {
+        File.write("#{Houcho::Config::SPECDIR}/specA_spec.rb"," ") 
+        File.write("#{Houcho::Config::SPECDIR}/specC_spec.rb"," ") 
+        @spec.attach("specA", ["studio3104", "studio3105"])
+      }
+    end
+
+    context "rename a spec file" do
+      it { @spec.rename("specC", "specSE") }
+
+      it { expect { @spec.rename("specX", "specXXX") }.to(
+          raise_error(Houcho::SpecFileException, "No such spec file - specX")
+      ) }
+
+      it { expect { @spec.rename("specSE", "specA") }.to(
+          raise_error(Houcho::SpecFileException, "spec file already exist - specA")
+      ) }
+
+      it { @spec.rename("specSE", "specC") }
+    end
   end
 
 
   describe Houcho::OuterRole do
     context "set, get and delete attribute of a role" do
-      it { @outerrole.set_attr("houcho::rspec::studio3104", { A: "apple", B: "banana", C: "chocolate" }) }
-      it { expect(@outerrole.get_attr("houcho::rspec::studio3104")).to eq({ A: "apple", B: "banana", C: "chocolate" }) }
-      it { expect(@outerrole.get_attr_json("houcho::rspec::studio3104")).to eq("{\"A\":\"apple\",\"B\":\"banana\",\"C\":\"chocolate\"}") }
-      it { expect(@outerrole.get_attr("houcho::rspec::studio3104", "A")).to eq({ A: "apple" }) }
+      it { @outerrole.set_attr(
+        "houcho::rspec::studio3104",
+        { A: "apple", B: "banana", C: "chocolate" }
+      ) }
+      it { expect(@outerrole.get_attr("houcho::rspec::studio3104")).to(
+        eq({ A: "apple", B: "banana", C: "chocolate" })
+      ) }
+      it { expect(@outerrole.get_attr_json("houcho::rspec::studio3104")).to(
+        eq("{\"A\":\"apple\",\"B\":\"banana\",\"C\":\"chocolate\"}")
+      ) }
+      it { expect(@outerrole.get_attr("houcho::rspec::studio3104", "A")).to(
+        eq({ A: "apple" })
+      ) }
       it { expect(@outerrole.get_attr("invalid_role")).to eq({}) }
       it { expect(@outerrole.get_attr_json("invalid_role")).to eq("{}") }
 
-      it { expect { @outerrole.set_attr("houcho::rspec::studio3104", { "A" => "anpanman" }) }.to(
-        raise_error(Houcho::AttributeExceptiotn, "attribute has already defined value in outerrole - A")
-      )}
+      it { expect { @outerrole.set_attr(
+        "houcho::rspec::studio3104", { "A" => "anpanman" }
+      ) }.to(
+        raise_error(
+          Houcho::AttributeExceptiotn,
+          "attribute has already defined value in outerrole - A"
+        )
+      ) }
 
       it "force set" do
         expect(@outerrole.set_attr!("houcho::rspec::studio3104", { "A" => "anpanman" }))
@@ -338,10 +403,5 @@ YAML
         )
       end
     end
-  end
-
-
-  after :all do
-    FileUtils.rm_rf(spectmp)
   end
 end

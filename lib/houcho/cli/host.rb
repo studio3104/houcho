@@ -1,11 +1,10 @@
 require 'thor'
 require 'houcho/host'
-require 'houcho/cli/host/attribute'
 
 module Houcho
   module CLI
     class Host < Thor
-      register(Houcho::CLI::HostAttribute, 'attr', 'attr [set|get|delete]', 'operation of host attribute')
+
       namespace :host
       @@h = Houcho::Host.new
 

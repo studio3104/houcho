@@ -4,13 +4,15 @@ require "houcho/cli/role"
 require "houcho/cli/spec"
 require "houcho/cli/host"
 require "houcho/cli/outerrole"
+require "houcho/cli/attribute"
 
 module Houcho::CLI
   class Main < Thor
     register(Houcho::CLI::Role, "role", "role [create|delete|rename|list|details|exec]", "operation of roles")
     register(Houcho::CLI::Host, "host", "host [attach|detach|list|details]", "operation of hosts")
-    register(Houcho::CLI::Spec, "spec", "spec [attach|detach|list|details|exec|check]", "operation of specs")
+    register(Houcho::CLI::Spec, "spec", "spec [attach|detach|list|details|rename|delete|exec|check]", "operation of specs")
     register(Houcho::CLI::OuterRole, "outerrole", "outerrole [attach|detach|list|details|load]", "operation of outer roles")
+    register(Houcho::CLI::Attribute, "attr", "attr [set|get|delete]", "operation of attribute")
 
     desc "init","set houcho repository on directory set environment variable HOUCHO_ROOT"
     def init

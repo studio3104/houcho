@@ -52,8 +52,8 @@ module Houcho
     end
 
 
-    def get_attr_json(host, name = nil)
-      get_attr(host, name, true)
+    def get_attr_json(target, name = nil)
+      get_attr(target, name, true)
     end
 
 

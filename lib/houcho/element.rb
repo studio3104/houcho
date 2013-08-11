@@ -43,14 +43,6 @@ module Houcho
     end
 
 
-    def attached?(element, id = nil)
-      sql = "SELECT * FROM #{@type} WHERE name = '#{element}'"
-      sql += " AND role_id = #{id}" if id
-
-      !@db.execute(sql).empty?
-    end
-
-
     def attach(elements, roles)
       elements = [elements] unless elements.is_a?(Array)
       roles = [roles] unless roles.is_a?(Array)
@@ -73,6 +65,16 @@ module Houcho
 
         end #end of transaction
       end
+    end
+
+
+    def detach_from_all(elements)
+      roles = []
+      details(elements).each do |e, r|
+        roles = roles.concat(r["role"]||[]).uniq
+      end
+
+      detach(elements, roles)
     end
 
 
@@ -103,15 +105,5 @@ module Houcho
         end #end of transaction
       end
     end
-  end
-end
-
-__END__
-    def indexes(element)
-      return [] if ! @elements.data.values.flatten.include?(element)
-      @elements.data.select { |index, elems| elems.include?(element) }.keys
-    end
-
-
   end
 end

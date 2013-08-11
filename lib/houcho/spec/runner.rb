@@ -21,7 +21,7 @@ class Spec
     end
 
 
-    def check(spec, host_count, dry_run = false) #dry_run for test
+    def check(spec, host_count, dry_run = false, console_output = false) #dry_run for test
       spec = spec.is_a?(Array) ? spec : [spec]
       role = spec.map { |s| @spec.details(s)[s]["role"] }.flatten
       host = []
@@ -36,7 +36,7 @@ class Spec
         end
       end
 
-      execute_manually(host.sample(host_count), spec, dry_run)
+      execute_manually(host.sample(host_count), spec, dry_run, console_output)
     end
 
 
@@ -45,8 +45,9 @@ class Spec
       spec = spec.is_a?(Array) ? spec : [spec]
 
       run(
-        { "manually" => { "host" => host, "spec" => spec } },
+        { rand(36**50).to_s(36) => { "host" => host, "spec" => spec } },
         dryrun,
+        false,
         console_output
       )
     end
@@ -61,14 +62,16 @@ class Spec
       @role.details(role).each do |rolename, value|
         next unless value["spec"]
 
-        rv ||= {}
-        rv["host"] ||= []
-        rv["spec"] ||= []
+        rv = {}
+        rv["host"] = []
+        rv["spec"] = []
+        rv["outer role"] = []
 
         rv["spec"].concat(value["spec"]).uniq
         rv["host"].concat(value["host"]).uniq if value["host"]
 
         if value["outer role"]
+          rv["outer role"].concat(value["outer role"].keys).uniq
           value["outer role"].each do |outerrolename, v|
             rv["host"].concat(v["host"]).uniq if v["host"]
           end
@@ -84,9 +87,10 @@ class Spec
 
     def run(target, dryrun, ci = false, console_output = false)
       messages = []
+      failure = false
 
       target.each do |role, v|
-        @spec.check_existenxe(v["spec"])
+        @spec.check_existence(v["spec"])
         spec = v["spec"].map { |spec| "#{@specdir}/#{spec}_spec.rb" }
         command = "parallel_rspec #{spec.sort.uniq.join(" ")}"
 
@@ -100,33 +104,62 @@ class Spec
         end
 
         v["host"].each do |host|
-          attr = @role.get_attr(role).merge(
-            @outerrole.get_attr(v["outer role"]).merge(@host.get_attr(host))
-          )
+          attr_role = @role.get_attr(role)
+          attr_host = @host.get_attr(host)
+          attr_outerrole = {}
+
+          if v["outer role"]
+            v["outer role"].each do |o|
+              attr_outerrole.merge!(@outerrole.get_attr(o))
+            end
+          end
+
+          attr = attr_role.merge(attr_outerrole)
+          attr = attr.merge(attr_host)
+
+          logmesg = ""
+          if attr != {} && attr_host == {} && v["outer role"].size > 1
+            logmsg = "might not be given the appropriate attribute value, because #{host} have no attributes and belongs to more than one outer role - #{v["outer role"].join(", ")}"
+            @logger.warn(host) { message }
+            logmsg += "\n"
+          end
 
           result = systemu(
             command,
             :env => {
               "TARGET_HOST" => host,
-              "TARGET_HOST_ATTR" => @host.get_attr_json(host)
+              "TARGET_HOST_ATTR" => JSON.generate(attr)
             },
             :cwd => File.join(@specdir, "..")
           )
-          @logger.info(host) {result[1]}
+
+          @logger.info(host) { result[1] }
+          failure = true if result[0] != 0
+
           msg = result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp
           msg += "\t#{host} => #{v["spec"].join(", ")}\n"
           puts msg if console_output
-          messages << msg
 
-          post_result(result, role, host, v["spec"], command) if ci
+          if ci
+            begin
+              post_result(result, role, host, v["spec"], command, logmsg)
+            rescue
+              ci = false
+            end
+          end
         end
       end
 
-      messages
+      failure ? false : messages
     end
 
 
-    def post_result(result, role, host, spec, command)
+    private
+    def attribute(role, host)
+    end
+
+
+    def post_result(result, role, host, spec, command, message)
       result_status = result[0] == 0 ? 1 : 2
 
       ukigumo = Houcho::Config::UKIGUMO
@@ -142,7 +175,7 @@ class Spec
           :repo     => git["uri"],
           :revision => spec.join(", "),
           :vc_log   => command,
-          :body     => result[1],
+          :body     => message + result[1],
         })
       end
 

@@ -12,7 +12,8 @@ module Houcho
     end
 
 
-    def check_existenxe(specs)
+    def check_existence(specs)
+      specs = [specs] unless specs.is_a?(Array)
       files = specs.partition { |spec| File.exist?("#{@specdir}/#{spec}_spec.rb") }
       raise SpecFileException, "No such spec file - #{files[1].join(",")}" unless files[1].empty?
 
@@ -23,29 +24,52 @@ module Houcho
     def attach(specs, roles)
       specs = [specs] unless specs.is_a?(Array)
       roles = [roles] unless roles.is_a?(Array)
-      files = check_existenxe(specs)
+      files = check_existence(specs)
 
       super(files, roles)
     end
 
 
-    def delete_file(specs)
+    def rename(from, to)
+      if File.exist?("#{@specdir}/#{to}_spec.rb")
+        raise SpecFileException, "spec file already exist - #{to}"
+      end
+
+      check_existence(from)
+      File.rename("#{@specdir}/#{from}_spec.rb", "#{@specdir}/#{to}_spec.rb")
+      @db.execute("UPDATE #{@type} SET name = ? WHERE name = ?", to, from)
+    end
+
+
+    def delete(specs, force = false)
+      specs = [specs] unless specs.is_a?(Array)
+
+      detach_from_all(specs) if force
+
+      @db.transaction do
+
       specs.each do |spec|
-        raise SpecFileException, "Spec file has been attached to role. - #{spec}" if attached?(spec)
-        File.delete("#{@specdir}/#{spec}_spec.rb")
+        begin
+          @db.execute("DELETE FROM #{@type} WHERE name = ?", spec)
+        rescue SQLite3::ConstraintException, "foreign key constraint failed"
+          raise SpecFileException, "spec file has been attached to role - #{spec}"
+        end
+      end
+
+      end #end of transaction
+
+      begin
+        check_existence(specs).each do |spec|
+          File.delete("#{@specdir}/#{spec}_spec.rb")
+        end
+      rescue => e
+        raise e.class, "#{e.message}" unless force
       end
     end
 
 
-    def delete_file!(specs)
-      specs.each do |spec|
-        begin
-          delete([spec])
-        rescue SpecFileException
-          @db.execute("DELETE FROM #{@table} WHERE name = ?", spec)
-          retry
-        end
-      end
+    def delete!(specs, force = true)
+      delete(specs, true)
     end
   end
 end
