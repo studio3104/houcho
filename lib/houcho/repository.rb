@@ -1,8 +1,6 @@
 require "houcho/config"
 require "houcho/database"
 
-include Houcho::Database
-
 module Houcho
   class Repository
     def self.init
@@ -55,7 +53,7 @@ end
 EOD
       ) unless File.exist?("#{Houcho::Config::SPECDIR}/spec_helper.rb")
 
-      create_tables
+      Houcho::Database.new.create_tables
     end
   end
 end

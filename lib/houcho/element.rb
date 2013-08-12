@@ -4,7 +4,7 @@ require "houcho/database"
 module Houcho
   class Element
     def initialize(type)
-      @db = Houcho::Database::Handle
+      @db = Houcho::Database.new.handle
       @role = Houcho::Role.new
       @type = type
     end

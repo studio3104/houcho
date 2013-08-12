@@ -6,8 +6,8 @@ module Houcho
   module CLI
     class OuterRole < Thor
       namespace :host
-      @@or = Houcho::OuterRole.new
 
+      @@or = Houcho::OuterRole.new
 
       desc 'list', 'show all of host list'
       def list

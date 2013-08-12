@@ -4,10 +4,9 @@ require 'houcho/host'
 module Houcho
   module CLI
     class Host < Thor
-
       namespace :host
-      @@h = Houcho::Host.new
 
+      @@h = Houcho::Host.new
 
       desc 'list', 'show all of host list'
       def list

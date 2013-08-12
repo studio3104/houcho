@@ -2,12 +2,16 @@ require "sqlite3"
 require "houcho/config"
 
 module Houcho
-  module Database
-    Handle = SQLite3::Database.new("#{Houcho::Config::APPROOT}/houcho.db")
-    Handle.execute("PRAGMA foreign_keys = ON")
+  class Database
+    attr_reader :handle
+
+    def initialize
+      @handle = SQLite3::Database.new("#{Houcho::Config::APPROOT}/houcho.db")
+      @handle.execute("PRAGMA foreign_keys = ON")
+    end
 
     def create_tables
-      Handle.execute_batch <<-SQL
+      @handle.execute_batch <<-SQL
         CREATE TABLE IF NOT EXISTS role (
           id INTEGER NOT NULL PRIMARY KEY,
           name VARCHAR NOT NULL UNIQUE

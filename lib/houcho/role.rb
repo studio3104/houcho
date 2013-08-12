@@ -11,7 +11,7 @@ module Houcho
     include Houcho::Attribute
 
     def initialize
-      @db = Houcho::Database::Handle
+      @db = Houcho::Database.new.handle
       @type = "role"
       @type_id = 0
     end

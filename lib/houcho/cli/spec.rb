@@ -6,8 +6,8 @@ module Houcho
   module CLI
     class Spec < Thor
       namespace :spec
-      @@s = Houcho::Spec.new
 
+      @@s = Houcho::Spec.new
 
       desc 'list', 'show all of spec list'
       def list

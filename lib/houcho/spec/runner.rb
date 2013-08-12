@@ -2,6 +2,7 @@ require "yaml"
 require "systemu"
 require "json"
 require "logger"
+require "parallel"
 require "houcho/role"
 require "houcho/spec"
 require "houcho/ci"
@@ -92,7 +93,7 @@ class Spec
       target.each do |role, v|
         @spec.check_existence(v["spec"])
         spec = v["spec"].map { |spec| "#{@specdir}/#{spec}_spec.rb" }
-        command = "parallel_rspec #{spec.sort.uniq.join(" ")}"
+        command = "rspec --format documentation #{spec.sort.uniq.join(" ")}"
 
         if dryrun
           v["host"].each do |host|
@@ -103,7 +104,7 @@ class Spec
           next
         end
 
-        v["host"].each do |host|
+        Parallel.each(v["host"], :in_threads => Parallel.processor_count)  do |host|
           attr_role = @role.get_attr(role)
           attr_host = @host.get_attr(host)
           attr_outerrole = {}
@@ -133,10 +134,11 @@ class Spec
             :cwd => File.join(@specdir, "..")
           )
 
-          @logger.info(host) { result[1] }
+          @logger.info(host) { "#{result[1]}\n#{result[2]}" }
           failure = true if result[0] != 0
 
-          msg = result[1].scan(/\d* examples?, \d* failures?\n/).first.chomp
+          msg = result[1].scan(/\d* examples?, \d* failures?\n/).first
+          msg = msg ? msg.chomp : "error"
           msg += "\t#{host} => #{v["spec"].join(", ")}\n"
           puts msg if console_output
 
@@ -155,10 +157,6 @@ class Spec
 
 
     private
-    def attribute(role, host)
-    end
-
-
     def post_result(result, role, host, spec, command, message)
       result_status = result[0] == 0 ? 1 : 2
 
@@ -175,7 +173,7 @@ class Spec
           :repo     => git["uri"],
           :revision => spec.join(", "),
           :vc_log   => command,
-          :body     => message + result[1],
+          :body     => ( message || "" ) + result[1],
         })
       end
 
