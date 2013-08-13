@@ -144,16 +144,16 @@ $ houcho role details studio3104::www
 
 ## Applied Usage
 - at modified specs, run specs by sampling appropriately host.
-  - `--sample-host-count` can specifies the number of samples(default: 5)
+  - `--samples` can specifies the number of samples(default: 5)
   - argument is able to specify exception of `_spec.rb`, and relative path from `spec/` under working directory same as simple usage.
   
   ```sh
 $ houcho spec check houcho_sample hogehogechan
-7 examples, 7 failures  studio3109.test, spec/houcho_sample_spec.rb
-7 examples, 7 failures  studio3110.test, spec/houcho_sample_spec.rb
-7 examples, 7 failures  www02.studio3104.com, spec/houcho_sample_spec.rb
-7 examples, 7 failures  studio3105.test, spec/houcho_sample_spec.rb
-7 examples, 7 failures  studio3104.test, spec/houcho_sample_spec.rb
+7 examples, 7 failures  studio3109.test => houcho_sample
+7 examples, 7 failures  studio3110.test => houcho_sample
+7 examples, 7 failures  www02.studio3104.com => houcho_sample
+7 examples, 7 failures  studio3105.test => houcho_sample
+7 examples, 7 failures  studio3104.test => houcho_sample
 hogehogechan has not attached to any roles
   ```
 
