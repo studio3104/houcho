@@ -361,16 +361,16 @@ YAML
     context "run role" do
       it do
         expect(@specrunner.execute_role("studio3104", [], true)).to eq([
-          "TARGET_HOST=hostA parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
-          "TARGET_HOST=test1.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
-          "TARGET_HOST=test2.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb"
+          "TARGET_HOST=hostA rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test1.studio3104.com rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test2.studio3104.com rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb"
         ])
       end
 
       it "with exclude host" do
         expect(@specrunner.execute_role("studio3104", "test1.studio3104.com", true)).to eq([
-          "TARGET_HOST=hostA parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
-          "TARGET_HOST=test2.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb"
+          "TARGET_HOST=hostA rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test2.studio3104.com rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb"
         ])
       end
     end
@@ -382,8 +382,8 @@ YAML
           "specA",
           true
         )).to eq([
-          "TARGET_HOST=test3.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb",
-          "TARGET_HOST=test4.studio3104.com parallel_rspec #{Houcho::Config::SPECDIR}/specA_spec.rb"
+          "TARGET_HOST=test3.studio3104.com rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb",
+          "TARGET_HOST=test4.studio3104.com rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb"
         ])
       end
 

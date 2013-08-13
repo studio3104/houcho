@@ -1,6 +1,6 @@
 # Houcho
 - wrapping to execute serverspec
-- depends on ruby 1.9 later(recommended: 2.0 later).
+- depends on ruby 1.9.3 later(recommended: 2.0.0 later).
 
 ## Install and Initialize
 - install houcho from ruby gems
@@ -9,13 +9,14 @@
   $ gem install houcho
   ```
 
-- make working directory and initialize.
-  - when `houcho init` then `git init`
+- initialize working directory.
+  - set houcho repository on directory set environment variable `HOUCHO_ROOT`
+  - default: `/etc/houcho`
 
   ```sh
-$ mkdir houcho-repo
-$ cd houcho-repo
 $ houcho init
+$ ls /etc/houcho
+houcho.conf  houcho.db  log  outerrole  script  spec
   ```
 
 ## Simple Usage

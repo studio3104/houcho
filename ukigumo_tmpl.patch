@@ -1,0 +1,45 @@
+diff --git a/tmpl/include/table/project.tt b/tmpl/include/table/project.tt
+index 1c94b7d..7e76746 100644
+--- a/tmpl/include/table/project.tt
++++ b/tmpl/include/table/project.tt
+@@ -1,8 +1,8 @@
+ <h2><a href="[% uri_for('/project/' _ uri(project_name)) %]">[% project_name %]</a></h2>
+ <table>
+ <tr>
+-    <th>[% l('Branch') %]</th>
+-    <th>[% l('Revision') %]</th>
++    <th>[% l('Role') %]</th>
++    <th>[% l('Spec') %]</th>
+     <th>[% l('Status') %]</th>
+     <th>[% l('Date') %]</th>
+ </tr>
+diff --git a/tmpl/recent.tt b/tmpl/recent.tt
+index f856497..6a6c92c 100644
+--- a/tmpl/recent.tt
++++ b/tmpl/recent.tt
+@@ -9,9 +9,9 @@
+ 
+         <table>
+             <tr>
+-                <th>[% l('Project') %]</th>
+-                <th>[% l('Branch') %]</th>
+-                <th>[% l('Revision') %]</th>
++                <th>[% l('Host') %]</th>
++                <th>[% l('Role') %]</th>
++                <th>[% l('Spec') %]</th>
+                 <th>[% l('Status') %]</th>
+                 <th>[% l('Date') %]</th>
+             </tr>
+diff --git a/tmpl/report_list.tt b/tmpl/report_list.tt
+index bbdb022..0e3481a 100644
+--- a/tmpl/report_list.tt
++++ b/tmpl/report_list.tt
+@@ -9,7 +9,7 @@
+ 
+         <table>
+             <tr>
+-                <th>[% l('Revision') %]</th>
++                <th>[% l('Spec') %]</th>
+                 <th>[% l('Status') %]</th>
+                 <th>[% l('Date') %]</th>
+             </tr>

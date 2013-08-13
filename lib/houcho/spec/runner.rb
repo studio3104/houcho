@@ -66,13 +66,11 @@ class Spec
         rv = {}
         rv["host"] = []
         rv["spec"] = []
-        rv["outer role"] = []
 
         rv["spec"].concat(value["spec"]).uniq
         rv["host"].concat(value["host"]).uniq if value["host"]
 
         if value["outer role"]
-          rv["outer role"].concat(value["outer role"].keys).uniq
           value["outer role"].each do |outerrolename, v|
             rv["host"].concat(v["host"]).uniq if v["host"]
           end
@@ -108,20 +106,23 @@ class Spec
           attr_role = @role.get_attr(role)
           attr_host = @host.get_attr(host)
           attr_outerrole = {}
+          outerrole = []
+          
+          @host.details(host).each do |h, v|
+            outerrole = outerrole.concat((v["outer role"] || [])).uniq
+          end
 
-          if v["outer role"]
-            v["outer role"].each do |o|
-              attr_outerrole.merge!(@outerrole.get_attr(o))
-            end
+          outerrole.each do |o|
+            attr_outerrole.merge!(@outerrole.get_attr(o))
           end
 
           attr = attr_role.merge(attr_outerrole)
           attr = attr.merge(attr_host)
 
           logmesg = ""
-          if attr != {} && attr_host == {} && v["outer role"].size > 1
-            logmsg = "might not be given the appropriate attribute value, because #{host} have no attributes and belongs to more than one outer role - #{v["outer role"].join(", ")}"
-            @logger.warn(host) { message }
+          if attr != {} && attr_host == {} && outerrole.size > 1
+            logmsg = "might not be given the appropriate attribute value, because #{host} have no attributes and belongs to more than one outer role - #{outerrole.join(", ")}"
+            @logger.warn(host) { logmsg }
             logmsg += "\n"
           end
 

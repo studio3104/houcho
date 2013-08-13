@@ -1,3 +1,4 @@
+# coding: utf-8
 require "thor"
 require "rainbow"
 require "houcho/repository"
