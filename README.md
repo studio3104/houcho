@@ -83,15 +83,15 @@ $ houcho role details studio3104::www
 ## Include CloudForecast's yaml file
 Houcho is able to load yaml of CloudForecast, and attach to the role defined.
 
-- install yaml of CloudForecast to `role/cloudforecast/` under working directory.
+- install yaml of CloudForecast to `${HOUCHO_ROOT}/outerrole/cloudforecast/` under working directory.
 - extension have to be yaml.
   
 - load cloudforecast's yaml.
   - run each time you replace the yaml. do not need to run every time.
   
   ```sh
-$ houcho cf load
-$ houcho cf show
+$ houcho outerrole load
+$ houcho outerrole list
 houcho::author::studio3104
 $ houcho cf details houcho::author::studio3104
 [houcho::author::studio3104]
@@ -103,7 +103,7 @@ $ houcho cf details houcho::author::studio3104
 - attach to the original role defined, the role read from cloudforecast.
 
   ```sh
-$ houcho cf attach houcho::author::studio3104 --roles studio3104::www
+$ houcho outerrole attach houcho::author::studio3104 --roles studio3104::www
 $ houcho role details studio3104::www
 [studio3104::www]
    host
@@ -114,13 +114,34 @@ $ houcho role details studio3104::www
    ├─ houcho_sample
    └─ houcho_sample2
    
-   cf
+   outer role
       houcho::author::studio3104
          host
          ├─ studio3104.test
          └─ studio3105.test
   ```
+
+## Setting Attribute to Role, Outer Role, Host
+- houcho is able to set individual attribute.
+- For example, you have a spec file like this.
+
+  ```
+  require "spec_helper"
+
+  describe file(attr[:httpd_conf]) do
+    it { should contain "SSLCompression\soff" }
+  end
+  ```
   
+- set variable `attr[:httpd_conf]` to be evaluated at runtime.
+
+  ```
+  $ houcho attr set --target role:studio3104::www --value httpd_conf:/etc/httpd/conf/httpd.conf
+  ```  
+  
+  - args of `--target`'s key can specify `host`, `role`, `outerrole`
+
+
 ## Applied Usage
 - at modified specs, run specs by sampling appropriately host.
   - `--sample-host-count` can specifies the number of samples(default: 5)
@@ -144,7 +165,3 @@ $ houcho role exec studio3104::www --exclude-hosts studio3104.test
 
 ## TODO
 - write more tests
-- `Houcho::Logger`
-  - LTSV
-- yaml -> sqlite ?
-- executable spec from relative path(current directory is any)
