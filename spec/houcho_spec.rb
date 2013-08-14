@@ -36,6 +36,7 @@ YAML
     @role.create(["studio3104", "studio3105"])
 
     Houcho::OuterRole::CloudForecast.load
+    Houcho::OuterRole::Yabitz.load
 
     @host.attach("hostA", "studio3104")
     @outerrole.attach("houcho::rspec::studio3104", "studio3104")

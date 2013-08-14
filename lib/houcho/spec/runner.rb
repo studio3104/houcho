@@ -161,24 +161,24 @@ class Spec
     def post_result(result, role, host, spec, command, message)
       result_status = result[0] == 0 ? 1 : 2
 
-      ukigumo = Houcho::Config::UKIGUMO
-      ikachan = Houcho::Config::IKACHAN
-      git = Houcho::Config::GIT
+      conf = YAML.load_file(Houcho::Config::FILE)
+      ukigumo = conf["ukigumo"]
+      ikachan = conf["ikachan"]
 
-      if ukigumo["host"] != "" && ukigumo["port"] != "" && git["uri"]
+      if ukigumo && ukigumo["host"] != "" && ukigumo["port"] != ""
         u = CI::UkigumoClient.new(ukigumo["host"], ukigumo["port"])
         ukigumo_report = u.post({
           :status   => result_status,
           :project  => host.gsub(/\./, "-"),
           :branch   => role,
-          :repo     => git["uri"],
+          :repo     => "_",
           :revision => spec.join(", "),
           :vc_log   => command,
           :body     => ( message || "" ) + result[1],
         })
       end
 
-      if ikachan["host"] != "" && ikachan["port"] != "" && result_status != 1
+      if ikachan && ikachan["host"] != "" && ikachan["port"] != "" && result_status != 1
         message = "[serverspec fail] #{host} => #{spec.join(", ")}"
         message += " (#{JSON.parse(ukigumo_report)["report"]["url"]})" if ukigumo_report
 

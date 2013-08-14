@@ -1,6 +1,7 @@
 require 'thor'
 require 'houcho/outerrole'
 require 'houcho/outerrole/cloudforecast'
+require 'houcho/outerrole/yabitz'
 
 module Houcho
   module CLI
@@ -47,6 +48,7 @@ module Houcho
       desc 'load', 'load role data from outer system'
       def load
         Houcho::OuterRole::CloudForecast.load
+        Houcho::OuterRole::Yabitz.load
       end
     end
   end

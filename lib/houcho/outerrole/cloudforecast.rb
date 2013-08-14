@@ -1,6 +1,8 @@
 require "houcho/config"
-require "houcho/database"
+require "houcho/outerrole/save"
 require "yaml"
+
+include Houcho::OuterRole::Save
 
 module Houcho
 
@@ -16,7 +18,7 @@ class OuterRole
         group = load_group(yaml)
         cfrole = create_cf_role(yaml, group)
 
-        save_cf_role(cfrole)
+        save_outer_role(cfrole, "CloudForecast")
       end
     end
 
@@ -54,39 +56,6 @@ class OuterRole
       end
 
       cfrole
-    end
-
-
-    def save_cf_role(cfrole)
-      db = Houcho::Database.new.handle
-      db.transaction do
-
-      cfrole.each do |outerrole, hosts|
-        begin
-          db.execute("INSERT INTO outerrole(name, data_source) VALUES(?,?)", outerrole, "CloudForecast")
-        rescue SQLite3::ConstraintException, "column name is not unique"
-        ensure
-          outerrole_id = db.execute("SELECT id FROM outerrole WHERE name = ?", outerrole).flatten.first
-        end
-
-        hosts.each do |host|
-          begin
-            db.execute("INSERT INTO host(name) VALUES(?)", host)
-          rescue SQLite3::ConstraintException, "column name is not unique"
-          ensure
-            begin
-              db.execute(
-                "INSERT INTO outerrole_host(outerrole_id, host_id) VALUES(?,?)",
-                outerrole_id,
-                db.execute("SELECT id FROM host WHERE name = ?", host).flatten.first
-              )
-            rescue SQLite3::ConstraintException, "column name is not unique"
-            end
-          end
-        end
-      end
-
-      end #end of transaction
     end
   end
 end

@@ -13,16 +13,6 @@ module Houcho
     LOGDIR = "#{APPROOT}/log"
     SPECLOG = "#{LOGDIR}/serverspec.log"
 
-    FILE = "#{Houcho::Config::APPROOT}/houcho.conf"
-    begin
-      conf = YAML.load_file(FILE)
-    rescue
-    end
-    if conf
-      UKIGUMO = conf["ukigumo"]
-      IKACHAN = conf["ikachan"]
-      GIT = conf["git"]
-      RSPEC = conf["rspec"]
-    end
+    FILE = "#{APPROOT}/houcho.conf"
   end
 end

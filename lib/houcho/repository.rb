@@ -19,7 +19,6 @@ module Houcho
         "ukigumo" => { "host" => "", "port" => "" },
         "ikachan" => { "host" => "", "port" => "", "channel" => [] },
         "git" => { "uri" => "" },
-        "rspec" => [],
       }.to_yaml) unless File.exist?("#{Houcho::Config::FILE}")
 
       File.write("#{Houcho::Config::SPECDIR}/spec_helper.rb", <<EOD
