@@ -8,7 +8,7 @@ class OuterRole
       db = Houcho::Database.new.handle
       db.transaction do
 
-      delete_ids = db.execute("SELECT id FROM outerrole").flatten
+      delete_ids = db.execute("SELECT id FROM outerrole WHERE data_source = ?", datasource).flatten
 
       outerrole.each do |outerrole, hosts|
         begin
