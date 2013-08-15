@@ -11,15 +11,17 @@ class OuterRole
   class << CloudForecast
     def load
       cfdir = Houcho::Config::CFYAMLDIR
+      @cfrole = {}
 
       Dir::entries(cfdir).each do |file|
         next if file !~ /\.yaml$/
         yaml = "#{cfdir}/#{file}"
         group = load_group(yaml)
         cfrole = create_cf_role(yaml, group)
-
-        save_outer_role(cfrole, "CloudForecast")
+        merge_cf_role(cfrole)
       end
+
+      save_outer_role(@cfrole, "CloudForecast")
     end
 
 
@@ -49,13 +51,19 @@ class OuterRole
         doc["servers"].each do |servers|
           label = servers["label"].gsub(/\s+/, '_') if servers["label"]
           outerrole = "#{group[i]}::#{label}::#{servers["config"].sub(/\.yaml$/, "")}"
-          hosts = servers["hosts"].map { |host| host.split(/\s+/)[1] }
+          hosts = (servers["hosts"] || []).map { |host| host.split(/\s+/)[1] }
 
           cfrole[outerrole] = hosts
         end
       end
 
       cfrole
+    end
+
+    def merge_cf_role(cfrole)
+      cfrole.each do |role, hosts|
+        @cfrole[role] = @cfrole[role] ? @cfrole[role].concat(hosts).uniq : hosts
+      end
     end
   end
 end
