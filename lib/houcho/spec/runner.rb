@@ -84,6 +84,7 @@ class Spec
     end
 
 
+    private
     def run(target, dryrun, ci = false, console_output = false)
       messages = []
       failure = false
@@ -92,6 +93,7 @@ class Spec
         @spec.check_existence(v["spec"])
         spec = v["spec"].map { |spec| "#{@specdir}/#{spec}_spec.rb" }
         command = "rspec --format documentation #{spec.sort.uniq.join(" ")}"
+        defined_spec_attr = grep_spec_attr(spec)
 
         if dryrun
           v["host"].each do |host|
@@ -103,50 +105,40 @@ class Spec
         end
 
         Parallel.each(v["host"], :in_threads => Parallel.processor_count)  do |host|
-          attr_role = @role.get_attr(role)
-          attr_host = @host.get_attr(host)
-          attr_outerrole = {}
-          outerrole = []
-          
-          @host.details(host).each do |h, v|
-            outerrole = outerrole.concat((v["outer role"] || [])).uniq
-          end
-
-          outerrole.each do |o|
-            attr_outerrole.merge!(@outerrole.get_attr(o))
-          end
-
-          attr = attr_role.merge(attr_outerrole)
-          attr = attr.merge(attr_host)
-
-          logmesg = ""
-          if attr != {} && attr_host == {} && outerrole.size > 1
-            logmsg = "might not be given the appropriate attribute value, because #{host} have no attributes and belongs to more than one outer role - #{outerrole.join(", ")}"
-            @logger.warn(host) { logmsg }
-            logmsg += "\n"
+          if !defined_spec_attr.empty?
+            attr = generate_attr(role, host)
+            attr.delete_if { |name, value| !defined_spec_attr.include?(name.to_s) }
           end
 
           result = systemu(
             command,
             :env => {
               "TARGET_HOST" => host,
-              "TARGET_HOST_ATTR" => JSON.generate(attr)
+              "TARGET_HOST_ATTR" => attr ? JSON.generate(attr) : "{}"
             },
             :cwd => File.join(@specdir, "..")
           )
 
-          @logger.info(host) { "#{result[1]}\n#{result[2]}" }
+          logmsg = attr.empty? ? "" : "attribute that has been set: #{attr}"
+          if !result[1].empty?
+            @logger.info(host) { logmsg } unless result[1].empty?
+            @logger.info(host) { result[1] }
+          end
+          @logger.warn(host) { result[2] } unless result[2].empty?
+
           failure = true if result[0] != 0
 
-          msg = result[1].scan(/\d* examples?, \d* failures?\n/).first
-          msg = msg ? msg.chomp : "error"
-          msg += "\t#{host} => #{v["spec"].join(", ")}\n"
-          puts msg if console_output
+          if console_output
+            msg = result[1].scan(/\d* examples?, \d* failures?\n/).first
+            msg = msg ? msg.chomp : "error"
+            msg += "\t#{host} => #{v["spec"].join(", ")}\n"
+            puts msg
+          end
 
           if ci
             begin
               post_result(result, role, host, v["spec"], command, logmsg)
-            rescue
+            rescue => e
               ci = false
             end
           end
@@ -157,10 +149,51 @@ class Spec
     end
 
 
-    private
+    def grep_spec_attr(spec)
+      attr = []
+
+      spec.each do |s|
+        File.open(s).each_line do |l|
+          /attr\[\:(?<name>.+)\]/ =~ l
+          attr << name
+        end
+      end
+
+      attr.compact.uniq
+    end
+
+
+    def generate_attr(role, host)
+      attr_role = @role.get_attr(role)
+      attr_host = @host.get_attr(host)
+      attr_outerrole = {}
+      outerrole = []
+
+      @host.details(host).each do |h, v|
+        outerrole = outerrole.concat((v["outer role"] || [])).uniq
+      end
+
+      outerrole.each do |o|
+        attr_outerrole.merge!(@outerrole.get_attr(o))
+      end
+
+      attr = attr_role.merge(attr_outerrole)
+      attr = attr.merge(attr_host)
+
+      if attr != {} && attr_host == {} && outerrole.size > 1
+        log = "might not be given the appropriate attribute value, because #{host} have no attributes and belongs to more than one outer role - #{outerrole.join(", ")}"
+        @logger.warn(host) { log }
+      end
+
+      return attr
+    end
+
+
     def post_result(result, role, host, spec, command, message)
       result_status = result[0] == 0 ? 1 : 2
+      result_status = result[2].empty? ? result_status : 3
 
+      # willing to mv to constractor
       conf = YAML.load_file(Houcho::Config::FILE)
       ukigumo = conf["ukigumo"]
       ikachan = conf["ikachan"]
@@ -169,12 +202,12 @@ class Spec
         u = CI::UkigumoClient.new(ukigumo["host"], ukigumo["port"])
         ukigumo_report = u.post({
           :status   => result_status,
-          :project  => host.gsub(/\./, "-"),
+          :project  => "This is test " + host.gsub(/\./, "-"),
           :branch   => role,
           :repo     => "_",
           :revision => spec.join(", "),
           :vc_log   => command,
-          :body     => ( message || "" ) + result[1],
+          :body     => [message, result[1], result[2]].join("\n\n")
         })
       end
 
