@@ -22,20 +22,26 @@ module Houcho
       end
 
 
-      desc "set", "set attribute"
+      desc "set [key1:value1 key2:value2...]", "set attribute"
       option :target, :type => :hash, :required => true, :desc => "assign target of hash"
-      option :value, :type => :hash, :required => true, :desc => "assign attribute of hash"
       option :force, :type => :boolean, :desc => "update attribute if defined already"
-      def set
+      def set(*args)
+        Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
+
+        value = {}
+        args.each do |v|
+          value = value.merge(Hash[*v.split(":")])
+        end
+
         options[:target].each do |target_type, target_name|
           obj = Houcho::CLI::Attribute.target_type_obj(target_type)
           begin
             if options[:force]
-              obj.set_attr!(target_name, options[:value])
+              obj.set_attr!(target_name, value)
             else
-              obj.set_attr(target_name, options[:value])
+              obj.set_attr(target_name, value)
             end
-          rescue Houcho::AttributeExceptiotn=> e
+          rescue Houcho::AttributeExceptiotn => e
             puts e.message
             exit!
           end

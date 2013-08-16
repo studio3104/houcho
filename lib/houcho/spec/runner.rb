@@ -202,7 +202,7 @@ class Spec
         u = CI::UkigumoClient.new(ukigumo["host"], ukigumo["port"])
         ukigumo_report = u.post({
           :status   => result_status,
-          :project  => "This is test " + host.gsub(/\./, "-"),
+          :project  => host.gsub(/\./, "-"),
           :branch   => role,
           :repo     => "_",
           :revision => spec.join(", "),
