@@ -119,7 +119,7 @@ class Spec
             :cwd => File.join(@specdir, "..")
           )
 
-          logmsg = attr.empty? ? "" : "attribute that has been set: #{attr}"
+          logmsg = attr ? "" : "attribute that has been set: #{attr}"
           if !result[1].empty?
             @logger.info(host) { logmsg } unless result[1].empty?
             @logger.info(host) { result[1] }
