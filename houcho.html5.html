@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<!--
+  Copyright 2011 Google Inc.
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+
+  Original slides: Marcin Wichary (mwichary@google.com)
+  Modifications: Chrome DevRel Team (chrome-devrel@googlegroups.com)
+                 Alex Russell (slightlyoff@chromium.org)
+                 Brad Neuberg
+-->
+
+<!-- GB: modifications for s9 template pack:
+ 
+  o removed offline manifest
+  o removed disclaimer; it's just a prototype anyway
+  o removed google analytics script code
+  o removed google maps script code
+  o removed all slides
+
+  o in js/utils.js changed line 541pp queryAll('.transitionSlide')
+ 
+     - looks for h1 (not h2) and doesn't include img (icon)
+
+  o in styles/commons.css commented out rules for li and bullets
+ 
+   li {
+    list-style: none;
+    padding: 10px 0;
+   }
+   .bullets {
+  font-size: 40px;
+  }
+  .bullets li::before {
+    content: '· ';
+  }
+-->
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge;chrome=1" />
+    <title>Houcho</title>
+    <link href="http://fonts.googleapis.com/css?family=Droid+Sans|Droid+Sans+Mono" rel="stylesheet" type="text/css" />
+    <link id="prettify-link" href="src/prettify/prettify.css" rel="stylesheet" disabled />
+    <link href="styles/fonts.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="styles/presentation.css" rel="stylesheet" type="text/css" media="screen" />
+    <link href="styles/common.css" rel="stylesheet" type="text/css" media="screen" />
+    <link class="theme" href="styles/default.css" rel="stylesheet" type="text/css" media="screen" />
+    <link class="theme" href="styles/moon.css" rel="stylesheet" type="text/css" media="screen" />
+    <link class="theme" href="styles/sand.css" rel="stylesheet" type="text/css" media="screen"/>
+    <link class="theme" href="styles/sea_wave.css" rel="stylesheet" type="text/css" media="screen"/>
+  </head>
+  <body>
+    <div id="flex-container">
+    <nav id="helpers">
+      <button title="Previous slide" id="nav-prev" class="nav-prev">&#8701;</button> 
+      <button title="Jump to a random slide" id="slide-no">5</button> 
+      <button title="Next slide" id="nav-next" class="nav-next">&#8702;</button>
+      <menu>
+        <button type="checkbox" data-command="toc" title="Table of Contents" class="toc">TOC</button>
+        <!-- <button type="checkbox" data-command="resources" title="View Related Resources">&#9734;</button> -->
+        <button type="checkbox" data-command="notes" title="View Slide Notes">&#9999;</button>
+        <button type="checkbox" data-command="source" title="View slide source">&#8635;</button>
+        <button type="checkbox" data-command="help" title="View Help">?</button>
+      </menu>
+    </nav>
+    <div class="slides">
+      <div id="presentation-counter">Loading...</div>
+        <div class="slide" id="landing-slide">
+          <section class="middle">
+            <p>This presentation is an HTML5 website</p>
+            <p>Press <span id="left-init-key" class="key">&rarr;</span> key to advance.</p>
+          </section>
+          <aside class="note">
+            <section>
+              Welcome! (This field is for speaker notes and commentary.)
+            </section>
+          </aside> 
+        </div>
+
+        <div class="slide" id="controls-slide">
+          <header>Slides controls</header>
+          <section>
+            <ul>
+              <li><span class="key">&larr;</span> and <span class="key">&rarr;</span> to move around.</li>
+              <li><span class="key">Ctrl/Command</span> and <span class="key">+</span> or <span class="key">-</span> to zoom in and out if slides don’t fit.</li>
+              <li><span class="key">S</span> to view page source.</li>
+              <li><span class="key">T</span> to change the theme.</li>
+              <li><span class="key">H</span> to toggle syntax highlight.</li>
+              <li><span class="key">N</span> to toggle speaker notes.</li>
+              <li><span class="key">3</span> to toggle 3D effect.</li>
+              <li><span class="key">0</span> to toggle help.</li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="slide" id="title-slide">
+          <section class="middle">
+            <hgroup>
+              <h1>
+                Houcho
+              </h1>
+              <h2>
+                
+              </h2>
+            </hgroup>
+          </section>
+        </div>
+
+        <div class="slide" id="table-of-contents">
+          <header><h1>Agenda - Table of Contents</h1></header>
+          <section>
+            <ul id="toc-list">
+            </ul>
+          </section>
+        </div>
+
+
+        
+        <div class="slide transitionSlide" id="slide2">
+          <header><h1 id="what-is-houcho">What is Houcho?</h1></header>
+          <section>
+              <!-- === begin markdown block ===
+
+      generated by markdown 1.1.1 on Ruby 2.0.0 (2013-05-14) [x86_64-darwin12.3.0]
+                on 2013-08-20 11:55:52 +0900 with Markdown engine kramdown (1.1.0)
+                  using options {}
+  -->
+
+<!-- _S9SLIDE_ -->
+
+
+<h3 id="serverspec-">多数のホストに対する serverspec の実行をラップ</h3>
+
+<h3 id="spec-">ホストと spec を紐付けてロールとして定義</h3>
+
+<h3 id="section">外部のホストの組み合わせ定義を取り込んで扱える</h3>
+
+<ul>
+  <li>CloudForecast</li>
+  <li>Yabitz</li>
+</ul>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide3">
+          <header><h1 id="section-1">リポジトリの初期化</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="houcho-">Houcho で使うディレクトリを初期化</h3>
+<ul>
+  <li>環境変数 <code>HOUCHO_ROOT</code> を参照</li>
+  <li><code>HOUCHO_ROOT</code> が未定義の場合、<code>/etc/houcho</code> が作成される</li>
+</ul>
+
+<pre lang="sh"><code>$ houcho init
+$ ls /etc/houcho
+houcho.conf   houcho.db   log   outerrole   script   spec
+</code></pre>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide4">
+          <header><h1 id="section-2">制約など</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="section-3">実行環境</h3>
+<ul>
+  <li>Ruby 1.9.3以降じゃないと動きません
+    <ul>
+      <li>serverspec は 1.8 をサポートしてますが・・・</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="spec--1">spec ファイル</h3>
+<ul>
+  <li>/etc/houcho/spec に設置</li>
+  <li>_spec.rb で終わるファイル名</li>
+  <li>コマンドの引数で渡してあげる場合
+    <ul>
+      <li>/etc/houcho/spec からの相対パス</li>
+      <li>_spec.rb をはずす</li>
+    </ul>
+  </li>
+</ul>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide5">
+          <header><h1 id="section-4">シンプルな使い方</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h4 id="teststudio3104com--bose-">test.studio3104.com に bose ユーザが存在するかどうかテストする</h4>
+<ul>
+  <li>atnodes ライクな使い勝手</li>
+</ul>
+
+<h3 id="spec--2">spec ファイル</h3>
+
+<h5 id="etchouchospecuser-checkspecrb">/etc/houcho/spec/user-check_spec.rb</h5>
+
+<pre lang="rb"><code>describe user("bose") do
+  it { should exist }
+end
+</code></pre>
+
+<h3 id="section-5">コマンド</h3>
+
+<pre><code>$ houcho spec exec user-check --hosts test.studio3104.com
+</code></pre>
+
+<ul>
+  <li>引数には spec を1つ以上指定</li>
+  <li>オプション
+    <ul>
+      <li>–hosts ホストを1つ以上指定</li>
+      <li>–dry-run 実行されるコマンドを表示</li>
+    </ul>
+  </li>
+</ul>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide6">
+          <header><h1 id="section-6">ロール1</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="section-7">ロールの作成</h3>
+
+<pre lang="sh"><code>$ houcho role create user
+</code></pre>
+
+<h3 id="spec--3">ホストと spec を関連付ける</h3>
+
+<pre lang="sh"><code>$ houcho host attach test.studio3104.com --roles user
+$ houchoc spec attach user-check --roles user
+</code></pre>
+
+<h3 id="section-8">詳細確認</h3>
+
+<pre lang="sh"><code>$ houcho role details test1
+[user]
+  host
+  └─ test.studio3104.com
+
+  spec
+  └─ user-check
+</code></pre>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide7">
+          <header><h1 id="section-9">ロール2</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="section-10">ロールを実行</h3>
+
+<pre lang="sh"><code>$ houcho role exec user
+</code></pre>
+
+<ul>
+  <li>引数には ロール を1つ以上指定</li>
+  <li>オプション
+    <ul>
+      <li>–dry-run 実行されるコマンドを表示</li>
+    </ul>
+  </li>
+</ul>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide8">
+          <header><h1 id="cf-load1">CF からホストの組み合わせをLOAD1</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="section-11">設定ファイル</h3>
+
+<h5 id="etchouchoouterrolecloudforecastcloudforecastyaml">/etc/houcho/outerrole/cloudforecast/cloudforecast.yaml</h5>
+
+<pre><code>--- #hoge
+servers:
+  - label: foo
+  config: bar.yaml
+  hosts:
+    - 192.168.1.10 test01.studio3104.com
+    - 192.168.1.11 test02.studio3104.com
+    - 192.168.1.12 test03.studio3104.com
+</code></pre>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide9">
+          <header><h1 id="cf-load2">CF からホストの組み合わせをLOAD2</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="section-12">コマンド</h3>
+
+<pre><code>$ houcho outerrole load
+</code></pre>
+
+<h3 id="section-13">確認</h3>
+
+<pre><code>$ houcho outerrole list
+hoge::foo::bar
+</code></pre>
+
+<pre><code>$ houcho outerrole details hoge::foo::bar
+[hoge::foo::bar]
+  host
+  ├─ test01.studio3104.com
+  ├─ test02.studio3104.com
+  └─ test03.studio3104.com
+</code></pre>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide10">
+          <header><h1 id="yabitz-load">Yabitz からホストの組み合わせをLOAD</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="section-14">設定</h3>
+
+<h5 id="etchouchohouchoconf">/etc/houcho/houcho.conf</h5>
+
+<pre><code>yabitz:
+  host: yabitz.url
+  port: 80
+</code></pre>
+
+<h3 id="section-15">コマンド</h3>
+
+<pre><code>$ houcho outerrole load
+</code></pre>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide11">
+          <header><h1 id="section-16">ロールに外部のホスト定義を紐付け</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="section-17">コマンド</h3>
+
+<pre lang="sh"><code>$ houcho outerrole attach hoge::foo::bar --roles user
+</code></pre>
+
+<h3 id="section-18">確認</h3>
+
+<pre lang="sh"><code>$ houcho role details test1
+[user]
+  host
+  └─ test.studio3104.com
+
+  spec
+  └─ user-check
+
+  outer role
+    hoge::foo::bar
+      host
+      ├─ test01.studio3104.com
+      ├─ test02.studio3104.com
+      └─ test03.studio3104.com
+</code></pre>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide12">
+          <header><h1 id="section-19">ホストやロールに固有の情報を設定する</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h3 id="spec--4">spec ファイル例</h3>
+
+<pre><code>describe file(attr[:nginx_log_dir]) do
+  it { should be_directory }
+end
+</code></pre>
+
+<h3 id="section-20">コマンド</h3>
+
+<pre lang="sh"><code>$ houcho attr set nginx_log_dir:/var/log/nginx --target host:test.studio3104.com
+</code></pre>
+
+<h3 id="section-21">参照優先順位</h3>
+
+<h5 id="attribute-">attribute は実行時に評価される</h5>
+
+<h5 id="attribute--host">attribute は host、外部ホスト定義、ロールにそれぞれ設定可能</h5>
+
+<h5 id="section-22">優先順位の高い値が設定されていれば上書きされる</h5>
+<ul>
+  <li>host &gt; outer role &gt; role</li>
+</ul>
+
+
+
+          </section>
+        </div>
+        
+        <div class="slide transitionSlide" id="slide13">
+          <header><h1 id="spec--5">spec ファイルを修正したら</h1></header>
+          <section>
+              <!-- _S9SLIDE_ -->
+
+
+<h5 id="section-23">関連付けられたホストをサンプリングして実行する</h5>
+
+<h3 id="section-24">コマンド</h3>
+
+<pre lang="sh"><code>$ houcho spec check user-check
+</code></pre>
+
+<ul>
+  <li>オプション
+    <ul>
+      <li>–samples サンプリング数を指定(default: 5)</li>
+    </ul>
+  </li>
+</ul>
+<!-- === end markdown block === -->
+
+          </section>
+        </div>
+        
+
+
+        <div id="speaker-note" class="invisible" style="display: none;"></div>
+        <aside id="help" class="sidebar invisible" style="display: none;">
+          <table>
+            <caption>Help</caption>
+            <tbody>
+              <tr>
+                <th>Move Around</th>
+                <td>&larr;&nbsp;&rarr;</td>
+              </tr>
+              <tr>
+                <th>Source File</th>
+                <td>s</td>
+              </tr>
+              <tr>
+                <th>Change Theme</th>
+                <td>t</td>
+              </tr>
+              <tr>
+                <th>Syntax Highlight</th>
+                <td>h</td>
+              </tr>
+              <tr>
+                <th>Speaker Notes</th>
+                <td>n</td>
+              </tr>
+              <tr>
+                <th>Toggle 3D</th>
+                <td>3</td>
+              </tr>
+              <tr>
+                <th>Help</th>
+                <td>0</td>
+              </tr>
+            </tbody>
+          </table>
+        </aside>
+
+    </div> <!-- slides -->
+    </div>
+    
+    <!--[if lt IE 9]>
+    <script 
+      src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js">
+    </script>
+    <script>CFInstall.check({ mode: "overlay" });</script>
+    <![endif]-->
+
+    <script src="src/prettify/prettify.js" onload="prettyPrint();" defer></script>
+    <script src="js/utils.js"></script>
+  </body>
+</html>
