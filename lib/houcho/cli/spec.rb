@@ -82,6 +82,7 @@ module Houcho
       desc 'exec [spec1 spec2..]', 'run spec'
       option :hosts,   :type => :array,   :desc => '--hosts host1 host2 host3...', :required => true
       option :dry_run, :type => :boolean, :default => false, :desc => 'show commands that may exexute'
+      option :attr, :type => :hash, :default => false, :desc => 'set attribute'
       def exec(*args)
         Houcho::CLI::Main.empty_args(self, shell, __method__) if args.empty?
         runner = Houcho::Spec::Runner.new
@@ -90,8 +91,9 @@ module Houcho
           exit! unless runner.execute_manually(
             options[:hosts],
             args,
-            options[:dry_run],
-            true #output to console
+            dryrun: options[:dry_run],
+            console_output: true,
+            attr: options[:attr]
           )
         rescue Houcho::SpecFileException => e
           puts e.message

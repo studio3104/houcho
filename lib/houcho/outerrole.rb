@@ -12,6 +12,21 @@ module Houcho
       @type_id = 1
     end
 
+
+    def list(opt = {})
+      sql = "SELECT T1.name FROM outerrole T1, role_outerrole T2"
+      sql += " WHERE T1.data_source LIKE ?"
+      ds = opt[:data_source]
+
+      if opt[:role_id]
+        sql += " AND T1.id = T2.outerrole_id AND T2.role_id = ?"
+        return @db.execute(sql, ds ? ds : "%", opt[:role_id]).flatten
+      else
+        return @db.execute(sql, ds ? ds : "%").flatten
+      end
+    end
+
+
     def details(outer_role)
       outer_role = outer_role.is_a?(Array) ? outer_role : [outer_role]
       result = {}
@@ -25,6 +40,7 @@ module Houcho
 
       result
     end
+
 
     def hostlist(outer_role)
       outer_role = outer_role.is_a?(Array) ? outer_role : [outer_role]

@@ -22,7 +22,7 @@ class Spec
     end
 
 
-    def check(spec, host_count, dry_run = false, console_output = false) #dry_run for test
+    def check(spec, host_count, opt = {})
       spec = spec.is_a?(Array) ? spec : [spec]
       role = spec.map { |s| @spec.details(s)[s]["role"] }.flatten
       host = []
@@ -37,24 +37,28 @@ class Spec
         end
       end
 
-      execute_manually(host.sample(host_count), spec, dry_run, console_output)
+      execute_manually(
+        host.sample(host_count), spec,
+        dryrun: opt[:dryrun], console_output: opt[:console_output])
+      # dry run for test
     end
 
 
-    def execute_manually(host, spec, dryrun = false, console_output = false)
+    def execute_manually(host, spec, opt = {})
       host = host.is_a?(Array) ? host : [host]
       spec = spec.is_a?(Array) ? spec : [spec]
 
       run(
         { rand(36**50).to_s(36) => { "host" => host, "spec" => spec } },
-        dryrun,
-        false,
-        console_output
+        opt[:dryrun],
+        false, # ci
+        opt[:console_output],
+        opt[:attr]
       )
     end
 
 
-    def execute_role(role, ex_host = [], dryrun = false, console_output = false)
+    def execute_role(role, ex_host = [], dryrun = false, console_output = false, attr = nil)
       role = role.is_a?(Array) ? role : [role]
       ex_host = ex_host.is_a?(Array) ? ex_host : [ex_host]
 
@@ -80,12 +84,12 @@ class Spec
         role_valiables[rolename] = rv
       end
 
-      run(role_valiables, dryrun, true, console_output)
+      run(role_valiables, dryrun, true, console_output, attr)
     end
 
 
     private
-    def run(target, dryrun, ci = false, console_output = false)
+    def run(target, dryrun, ci = false, console_output = false, manually_attr = nil)
       messages = []
       failure = false
 
@@ -105,9 +109,13 @@ class Spec
         end
 
         Parallel.each(v["host"], :in_threads => Parallel.processor_count)  do |host|
-          if !defined_spec_attr.empty?
-            attr = generate_attr(role, host)
-            attr.delete_if { |name, value| !defined_spec_attr.include?(name.to_s) }
+          if manually_attr.is_a?(Hash)
+            attr = manually_attr
+          else
+            if !defined_spec_attr.empty?
+              attr = generate_attr(role, host)
+              attr.delete_if { |name, value| !defined_spec_attr.include?(name.to_s) }
+            end
           end
 
           result = systemu(

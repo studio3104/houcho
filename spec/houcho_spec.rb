@@ -381,7 +381,7 @@ YAML
         expect(@specrunner.execute_manually(
           ["test3.studio3104.com", "test4.studio3104.com"],
           "specA",
-          true
+          dryrun: true
         )).to eq([
           "TARGET_HOST=test3.studio3104.com rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb",
           "TARGET_HOST=test4.studio3104.com rspec --format documentation #{Houcho::Config::SPECDIR}/specA_spec.rb"
@@ -389,14 +389,14 @@ YAML
       end
 
       it "case of spec not exist" do
-        expect { @specrunner.execute_manually("test5.studio3104.com", ["specA", "specX"], true) }.to(
+        expect { @specrunner.execute_manually("test5.studio3104.com", ["specA", "specX"], dryrun: true) }.to(
           raise_error Houcho::SpecFileException, "No such spec file - specX"
         )
       end
     end
 
     context "check spec" do
-      it { expect(@specrunner.check("specA", 2, true).size).to be(2) }
+      it { expect(@specrunner.check("specA", 2, dryrun: true).size).to be(2) }
 
       it "case of spec not exist" do
         expect { @specrunner.check("specX", 2) }.to(

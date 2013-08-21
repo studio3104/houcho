@@ -25,7 +25,7 @@ class OuterRole
 
 
     private
-    def http_get(host, port, path, params)
+    def http_get(host, port, path, params = {})
       Net::HTTP.get(
         host,
         "#{path}?".concat(
@@ -38,22 +38,11 @@ class OuterRole
     end
 
     def download_json(host, port)
-      JSON.load(
-        http_get(
-          host, port, "/ybz/search.json",
-          {
-            andor: "AND",
-            cond0: 0,
-            field0: "os",
-            value0: " ",
-            status: "IN_SERVICE",
-            ex_andor: "AND",
-            ex_cond0: 0,
-            ex_field0: "not_selected",
-            ex_value0: nil,
-          },
-        )
+      metadata = JSON.load(
+        http_get( host, port, "/ybz/hosts/all.json" )
       )
+
+      metadata.select { |md| md["content"]["status"] == "IN_SERVICE" }
     end
 
     def create_yabitz_role(host, port)

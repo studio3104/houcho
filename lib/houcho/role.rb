@@ -92,7 +92,7 @@ module Houcho
         id.each do |i|
           hosts = hostobj.list(i)
           specs = specobj.list(i)
-          outerroles = orobj.list(i)
+          outerroles = orobj.list(role_id: i)
           outerhosts = orobj.details(outerroles)
 
           tmp = {}
