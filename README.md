@@ -1,3 +1,8 @@
+# Houcho is obsoleted.
+# Do not plan to future maintenance.
+
+---
+
 # Houcho
 - wrapping to execute serverspec
 - depends on ruby 1.9.3 later(recommended: 2.0.0 later).
